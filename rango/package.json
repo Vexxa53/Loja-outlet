@@ -1,0 +1,18 @@
+{
+  "name": "rango",
+  "version": "0.1.0",
+  "description": "Rango — SaaS multi-tenant de gestão para restaurantes, bares e adegas",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "start": "node --experimental-sqlite src/server.js",
+    "dev": "node --watch --experimental-sqlite src/server.js",
+    "seed": "node --experimental-sqlite src/seed.js"
+  },
+  "dependencies": {
+    "express": "^4.22.3"
+  }
+}

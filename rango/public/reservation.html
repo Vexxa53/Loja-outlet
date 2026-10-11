@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Minha reserva</title>
+<link rel="stylesheet" href="/css/styles.css" />
+<style>
+  body { background:var(--bg); }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 30px 16px; }
+  .recap div { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--line); }
+  .recap div:last-child { border-bottom:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="app"><div class="spinner"></div></div>
+  <p class="tiny" style="text-align:center;margin-top:20px">Reservas por <b>Rango</b></p>
+</div>
+<script src="/js/common.js"></script>
+<script>
+const TOKEN = location.pathname.split('/').filter(Boolean).pop();
+
+async function load() {
+  try {
+    const d = await api('/api/public/reservation/' + TOKEN);
+    render(d);
+  } catch (e) {
+    document.getElementById('app').innerHTML = '<div class="card empty"><div class="big">🔎</div>Reserva não encontrada.</div>';
+  }
+}
+function render(d) {
+  const rv = d.reservation, canceled = ['cancelada','concluida','noshow'].includes(rv.status);
+  document.getElementById('app').innerHTML = `
+    <div class="card stack">
+      <div style="text-align:center">
+        <h2 class="mb0">${esc(d.restaurant.name)}</h2>
+        <div style="margin-top:6px">${statusBadge(rv.status)}</div>
+      </div>
+      <div class="recap">
+        <div><span>Cliente</span><b>${esc(rv.customer_name)}</b></div>
+        <div><span>Data</span><b>${fmtDate(rv.date)}</b></div>
+        <div><span>Horário</span><b>${rv.time}</b></div>
+        <div><span>Pessoas</span><b>${rv.party_size}</b></div>
+        <div><span>Mesa</span><b>${esc(rv.tableName)}</b></div>
+        ${rv.note ? `<div><span>Obs.</span><b>${esc(rv.note)}</b></div>` : ''}
+      </div>
+      ${canceled
+        ? `<p class="muted" style="text-align:center">Esta reserva está <b>${rv.status}</b>.</p>
+           <a class="btn block" href="/r/${esc(d.restaurant.slug||'')}">Fazer nova reserva</a>`
+        : `<button class="btn block danger" onclick="cancelReserva()">Cancelar minha reserva</button>
+           ${d.restaurant.whatsapp ? `<a class="btn block soft" target="_blank" href="https://wa.me/55${d.restaurant.whatsapp.replace(/\\D/g,'')}">Falar no WhatsApp</a>` : ''}`}
+    </div>`;
+}
+async function cancelReserva() {
+  if (!confirm('Tem certeza que deseja cancelar?')) return;
+  try { await api('/api/public/reservation/' + TOKEN + '/cancel', { method: 'POST' }); toast('Reserva cancelada.', 'ok'); load(); }
+  catch (e) { toast(e.message, 'err'); }
+}
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rango — Sistema para Restaurantes</title>
+<meta name="description" content="Rango é o sistema de gestão para restaurantes, bares e lanchonetes: mesas, reservas, cardápio digital, comandas, central de pedidos para cozinha e bar, e pagamento (único ou dividido). Funciona no celular e no tablet, em tempo real.">
+<meta name="keywords" content="sistema para restaurante, gestão de restaurante, comanda digital, cardápio digital, PDV restaurante, sistema para bar, gestão de mesas, central de pedidos, KDS cozinha, software para restaurante">
+<meta name="author" content="Rango">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#E0352B">
+<link rel="canonical" href="https://rango.com.br/">
+<!-- Open Graph (compartilhamento no WhatsApp/Facebook/LinkedIn) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Rango">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="Rango — Sistema para Restaurantes">
+<meta property="og:description" content="Mesas, comandas, cardápio digital, cozinha e pagamento num sistema só. Funciona no celular e no tablet, em tempo real. Sem fidelidade.">
+<meta property="og:url" content="https://rango.com.br/">
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Rango — Sistema para Restaurantes">
+<meta name="twitter:description" content="Mesas, comandas, cardápio digital, cozinha e pagamento num sistema só. No celular e no tablet, em tempo real.">
+<!-- Dados estruturados (resultados ricos no Google) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Rango",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web, Android, iOS",
+      "description": "Sistema de gestão para restaurantes: mesas, reservas, cardápio digital, comandas, central de pedidos para cozinha e bar, e pagamento único ou dividido. Em tempo real, no celular e no tablet.",
+      "offers": { "@type": "Offer", "price": "89.00", "priceCurrency": "BRL" },
+      "featureList": [
+        "Mapa de mesas em tempo real",
+        "Reservas com alocação automática",
+        "Cardápio digital",
+        "Comandas e pedidos",
+        "Central de pedidos para cozinha e bar",
+        "Pagamento único ou dividido",
+        "Relatórios e desempenho"
+      ]
+    },
+    {
+      "@type": "Organization",
+      "name": "Rango",
+      "url": "https://rango.com.br/",
+      "description": "Sistema completo de gestão para restaurantes, bares e lanchonetes."
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "O Rango funciona no celular e no tablet?", "acceptedAnswer": { "@type": "Answer", "text": "Sim. O Rango roda no navegador do celular, do tablet e do computador. A equipe de salão opera direto da mesa, sem precisar voltar ao caixa." } },
+        { "@type": "Question", "name": "Preciso instalar algum programa?", "acceptedAnswer": { "@type": "Answer", "text": "Não. É só abrir no navegador e entrar com o seu login. Nada para instalar nem atualizar manualmente." } },
+        { "@type": "Question", "name": "Tem fidelidade ou multa para cancelar?", "acceptedAnswer": { "@type": "Answer", "text": "Não há fidelidade. Você usa enquanto faz sentido para o seu restaurante e cancela quando quiser." } },
+        { "@type": "Question", "name": "Dá para dividir a conta entre os clientes?", "acceptedAnswer": { "@type": "Answer", "text": "Sim. O pagamento pode ser único ou dividido, igualmente entre as pessoas ou por valor e forma de pagamento. A mesa só libera quando a conta está quitada." } },
+        { "@type": "Question", "name": "A cozinha e o bar recebem os pedidos automaticamente?", "acceptedAnswer": { "@type": "Answer", "text": "Sim. Um pedido só é distribuído por setor: os itens da cozinha vão para o painel da cozinha e as bebidas para o do bar, com cronômetro e alerta de atraso." } },
+        { "@type": "Question", "name": "Consigo acompanhar o faturamento e os tempos?", "acceptedAnswer": { "@type": "Answer", "text": "Sim. Você vê faturamento por período, tempo médio da cozinha e do bar, itens que mais saem e o desempenho de cada garçom." } }
+      ]
+    }
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: marca de restaurante — faixas cheias alternando vermelho e branco,
+   conteúdo num wrap central; navbar fixa; módulos com abas. Tema único (marca). */
+:root{
+  --red:#E0352B; --red-700:#B01E17; --red-900:#7C140F;
+  --red-050:#FDEDEB; --gold:#F4B740;
+  --ink:#1D1412; --ink-2:#5F5250; --ink-3:#8A7D7A;
+  --paper:#FFFFFF; --cream:#FBF3F0; --line:#ECDFDB;
+  --on-red:#FFFFFF; --on-red-2:rgba(255,255,255,.82); --on-red-line:rgba(255,255,255,.22);
+  --shadow:0 18px 50px -24px rgba(124,20,15,.45);
+  --radius:18px;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;
+  --body:"Instrument Sans",system-ui,-apple-system,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+/* Splash de abertura (tipo app) */
+.splash{position:fixed;inset:0;z-index:9999;background:#0b0b0d;
+  transition:opacity .55s ease;will-change:opacity}
+.splash.hide{opacity:0;pointer-events:none}
+.splash video{display:block;width:100%;height:100%;object-fit:contain}
+body.splashing{overflow:hidden;height:100%}
+@media (prefers-reduced-motion:reduce){.splash{transition:opacity .2s ease}}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+h1,h2,h3{font-family:var(--display);font-weight:800;line-height:1.05;margin:0;text-wrap:balance;letter-spacing:-.02em}
+p{margin:0}
+a{color:inherit}
+img{max-width:100%}
+.wrap{max-width:1140px;margin-inline:auto;padding-inline:clamp(16px,5vw,48px)}
+.section{padding-block:clamp(60px,8.5vw,116px)}
+.section--red{background:var(--red);color:var(--on-red)}
+.section--cream{background:var(--cream)}
+.section--paper{background:var(--paper)}
+
+/* eyebrow */
+.eyebrow{font-family:var(--display);font-weight:700;font-size:.78rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--red)}
+.section--red .eyebrow{color:var(--gold)}
+.section-head{max-width:720px;margin-bottom:clamp(32px,5vw,56px)}
+.section-head h2{font-size:clamp(1.9rem,4.6vw,3.1rem);margin:.5rem 0 .6rem}
+.section-head p{color:var(--ink-2);font-size:1.08rem}
+.section--red .section-head p{color:var(--on-red-2)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--display);font-weight:700;
+  font-size:1rem;padding:.9rem 1.4rem;border-radius:999px;border:2px solid transparent;
+  cursor:pointer;text-decoration:none;transition:transform .15s ease,box-shadow .2s ease,background .2s}
+.btn:active{transform:translateY(1px)}
+.btn--primary{background:var(--red);color:#fff;box-shadow:var(--shadow)}
+.btn--primary:hover{background:var(--red-700)}
+.btn--light{background:#fff;color:var(--red);box-shadow:0 14px 34px -18px rgba(0,0,0,.5)}
+.btn--light:hover{background:#fff5f4}
+.btn--ghost-light{background:transparent;color:#fff;border-color:var(--on-red-line)}
+.btn--ghost-light:hover{background:rgba(255,255,255,.12)}
+.btn--outline{background:transparent;color:var(--red);border-color:var(--red)}
+.btn--outline:hover{background:var(--red-050)}
+
+/* ---------- NAV ---------- */
+header.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:rgba(255,255,255,.92);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav-in{display:flex;align-items:center;gap:1.4rem;height:70px}
+.brand{display:flex;align-items:center;gap:.55rem;text-decoration:none;color:var(--red)}
+.brand-logo{display:block;height:44px;width:auto;aspect-ratio:700/449;flex:0 0 auto;
+  background-color:currentColor;
+  -webkit-mask:url(rango-logo.png) no-repeat left center/contain;
+          mask:url(rango-logo.png) no-repeat left center/contain}
+
+/* WhatsApp flutuante — acompanha a tela ao rolar */
+.wa-fab{position:fixed;z-index:60;right:max(16px,env(safe-area-inset-right,0px));
+  bottom:max(16px,env(safe-area-inset-bottom,0px));width:58px;height:58px;border-radius:50%;
+  background:#25D366;display:grid;place-items:center;box-shadow:0 12px 28px -8px rgba(0,0,0,.5);
+  transition:transform .15s ease}
+.wa-fab:hover{transform:scale(1.07)}
+.wa-fab svg{width:32px;height:32px;color:#fff}
+.wa-fab::after{content:"Fale no WhatsApp";position:absolute;right:68px;white-space:nowrap;
+  background:var(--ink);color:#fff;font-size:.82rem;font-weight:600;padding:.4rem .7rem;border-radius:8px;
+  opacity:0;transform:translateX(6px);transition:opacity .15s,transform .15s;pointer-events:none}
+.wa-fab:hover::after{opacity:1;transform:translateX(0)}
+@media (max-width:600px){.wa-fab::after{display:none}}
+.nav-links{display:flex;align-items:center;gap:1.35rem;margin-left:1.4rem}
+.nav-links a{text-decoration:none;color:var(--ink-2);font-weight:500;font-size:.95rem;padding:.3rem 0;
+  white-space:nowrap;border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+.nav-links a:hover{color:var(--red);border-color:var(--red)}
+.navlink-mobile{display:none}
+.nav-cta{margin-left:auto;display:flex;align-items:center;gap:.55rem;flex:0 0 auto}
+.nav-cta .btn{padding:.58rem 1.05rem;font-size:.92rem}
+.hamburger{display:none;margin-left:auto;background:none;border:0;cursor:pointer;padding:.4rem;color:var(--ink)}
+.hamburger svg{width:28px;height:28px}
+@media (max-width:1024px){
+  .nav-links{position:fixed;inset:70px 0 auto 0;flex-direction:column;align-items:stretch;gap:0;background:#fff;
+    border-bottom:1px solid var(--line);padding:.4rem clamp(16px,5vw,48px) 1rem;margin:0;
+    transform:translateY(-130%);transition:transform .28s ease;box-shadow:var(--shadow)}
+  .nav-links[data-open="true"]{transform:translateY(0)}
+  .nav-links a{padding:.9rem 0;border-bottom:1px solid var(--line);font-size:1rem}
+  .navlink-mobile{display:block}
+  .nav-cta .btn{display:none}
+  .hamburger{display:inline-flex}
+}
+
+/* ---------- HERO ---------- */
+.hero{background:radial-gradient(120% 120% at 85% 0%,var(--red) 0%,var(--red-700) 60%,var(--red-900) 100%);
+  color:#fff;overflow:hidden;position:relative}
+.hero::after{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1px);
+  background-size:26px 26px;opacity:.5;-webkit-mask-image:linear-gradient(180deg,#000,transparent 70%);mask-image:linear-gradient(180deg,#000,transparent 70%)}
+.hero-in{position:relative;z-index:1;display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(28px,5vw,64px);align-items:center;
+  padding-block:clamp(48px,7vw,92px)}
+.pill{display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.14);
+  border:1px solid var(--on-red-line);color:#fff;padding:.4rem .85rem;border-radius:999px;
+  font-size:.82rem;font-weight:600}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+.hero h1{font-size:clamp(2.4rem,6vw,4.1rem);margin:1.1rem 0 1rem}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.hero .lede{font-size:clamp(1.05rem,2.2vw,1.25rem);color:var(--on-red-2);max-width:40ch}
+.hero-actions{display:flex;flex-wrap:wrap;gap:.8rem;margin-top:1.6rem}
+.hero-trust{display:flex;flex-wrap:wrap;gap:.5rem 1.3rem;margin-top:1.8rem;color:var(--on-red-2);font-size:.9rem}
+.hero-trust span{display:inline-flex;align-items:center;gap:.4rem}
+.hero-trust svg{width:16px;height:16px;color:var(--gold)}
+/* hero mock card */
+.mock{background:#fff;color:var(--ink);border-radius:22px;box-shadow:0 40px 80px -30px rgba(0,0,0,.6);
+  overflow:hidden;border:1px solid rgba(0,0,0,.05)}
+.mock-top{display:flex;align-items:center;gap:.5rem;padding:.8rem 1rem;background:var(--cream);border-bottom:1px solid var(--line)}
+.mock-top i{width:11px;height:11px;border-radius:50%;background:#e0b4af;display:inline-block}
+.mock-top b{margin-left:.5rem;font-family:var(--display);font-size:.92rem}
+.mock-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px}
+.t{border-radius:12px;padding:12px 10px;font-weight:600;font-size:.8rem;border:1px solid var(--line);
+  display:flex;flex-direction:column;gap:3px;background:#fff}
+.t small{font-weight:500;color:var(--ink-3);font-size:.68rem}
+.t.free{background:#eafaef;border-color:#bfe9cc;color:#1c7a3e}
+.t.busy{background:#fdeceb;border-color:#f4c4c0;color:var(--red-700)}
+.t.pay{background:#fff6e5;border-color:#f3dca0;color:#8a6412}
+.mock-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid var(--line);
+  font-family:var(--display);font-weight:700}
+.mock-bar .v{color:var(--red)}
+@media (max-width:860px){.hero-in{grid-template-columns:1fr}.hero-mockwrap{order:2}}
+
+/* ---------- FAIXA MOBILIDADE ---------- */
+.band-mobile{background:var(--ink);color:#fff;padding-block:clamp(40px,6vw,74px)}
+.band-in{display:flex;align-items:center;justify-content:space-between;gap:clamp(22px,4vw,52px);flex-wrap:wrap}
+.band-copy{max-width:640px}
+.band-copy .eyebrow{color:var(--gold)}
+.band-copy h2{font-size:clamp(1.7rem,4vw,2.7rem);margin:.5rem 0 .6rem;color:#fff}
+.band-copy p{color:rgba(255,255,255,.76);font-size:1.08rem;max-width:50ch}
+.band-devices{display:flex;gap:.7rem;flex-wrap:wrap}
+.dev{display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:.6rem 1.05rem;
+  font-family:var(--display);font-weight:600;font-size:.95rem}
+.dev svg{width:18px;height:18px;color:var(--gold)}
+
+/* ---------- ANTES E DEPOIS ---------- */
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,3vw,28px)}
+@media (max-width:760px){.ba{grid-template-columns:1fr}}
+.ba-col{border-radius:var(--radius);padding:clamp(20px,3vw,30px);border:1px solid var(--line);background:#fff}
+.ba-col.bad{background:var(--cream)}
+.ba-col.good{background:linear-gradient(180deg,#fff,var(--red-050));border-color:#f3cfca}
+.ba-col h3{font-size:1.25rem;display:flex;align-items:center;gap:.55rem;margin-bottom:1rem}
+.ba-tag{font-family:var(--display);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;
+  padding:.3rem .7rem;border-radius:999px;font-weight:700}
+.ba-tag.bad{background:#efe4e1;color:var(--ink-2)}
+.ba-tag.good{background:var(--red);color:#fff}
+.ba-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.95rem}
+.ba-list li{display:flex;gap:.7rem;align-items:flex-start}
+.ba-list .ic{flex:0 0 auto;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;margin-top:2px}
+.bad .ic{background:#e7d3cf;color:var(--ink-2)}
+.good .ic{background:var(--red);color:#fff}
+.ba-list b{font-family:var(--display);font-size:.98rem;display:block}
+.ba-list small{color:var(--ink-2);font-size:.9rem}
+
+/* ---------- MÓDULOS (abas) ---------- */
+.mods{display:grid;grid-template-columns:300px 1fr;gap:clamp(18px,3vw,40px)}
+@media (max-width:860px){.mods{grid-template-columns:1fr}}
+.mod-tabs{display:flex;flex-direction:column;gap:.5rem}
+@media (max-width:860px){.mod-tabs{flex-direction:row;overflow-x:auto;padding-bottom:.4rem;-webkit-overflow-scrolling:touch}}
+.mod-tab{text-align:left;font-family:var(--display);font-weight:700;font-size:1.02rem;cursor:pointer;
+  background:rgba(255,255,255,.08);color:#fff;border:1px solid var(--on-red-line);border-radius:14px;
+  padding:.95rem 1.1rem;display:flex;align-items:center;gap:.7rem;white-space:nowrap;transition:background .15s,transform .15s}
+.mod-tab:hover{background:rgba(255,255,255,.16)}
+.mod-tab[aria-selected="true"]{background:#fff;color:var(--red-700);border-color:#fff}
+.mod-tab .n{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:rgba(255,255,255,.18);
+  font-size:.82rem;flex:0 0 auto}
+.mod-tab[aria-selected="true"] .n{background:var(--red);color:#fff}
+.mod-panel{background:#fff;color:var(--ink);border-radius:var(--radius);padding:clamp(22px,3.5vw,38px);box-shadow:var(--shadow)}
+.mod-panel h3{font-size:clamp(1.4rem,3vw,2rem);margin-bottom:.6rem}
+.mod-panel>p{color:var(--ink-2);max-width:56ch;font-size:1.05rem}
+.mod-feats{list-style:none;margin:1.3rem 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+@media (max-width:560px){.mod-feats{grid-template-columns:1fr}}
+.mod-feats li{display:flex;gap:.6rem;align-items:flex-start;font-size:.96rem}
+.mod-feats .ck{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--red-050);color:var(--red);
+  display:grid;place-items:center;margin-top:1px}
+.mod-feats .ck svg{width:13px;height:13px}
+[role="tabpanel"][hidden]{display:none}
+
+/* ---------- DEPOIMENTOS ---------- */
+.quotes{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.5vw,24px)}
+@media (max-width:900px){.quotes{grid-template-columns:1fr}}
+.quote{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:26px;display:flex;flex-direction:column;gap:1rem}
+.quote .stars{color:var(--gold);letter-spacing:2px;font-size:1rem}
+.quote p{font-size:1.02rem}
+.quote .metric{font-family:var(--display);font-weight:800;color:var(--red);font-size:1.6rem;line-height:1}
+.quote .metric small{display:block;font-size:.72rem;color:var(--ink-3);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:.25rem}
+.quote .who{display:flex;align-items:center;gap:.7rem;margin-top:auto;border-top:1px solid var(--line);padding-top:1rem}
+.quote .av{width:40px;height:40px;border-radius:50%;background:var(--red);color:#fff;display:grid;place-items:center;
+  font-family:var(--display);font-weight:800;font-size:.9rem;flex:0 0 auto}
+.quote .who b{font-family:var(--display);font-size:.95rem;display:block}
+.quote .who small{color:var(--ink-3);font-size:.82rem}
+.illus-note{margin-top:1.4rem;font-size:.82rem;color:var(--ink-3)}
+
+/* ---------- SEGMENTOS ---------- */
+.segs{display:flex;flex-wrap:wrap;gap:.7rem}
+.seg{background:rgba(255,255,255,.1);border:1px solid var(--on-red-line);color:#fff;border-radius:999px;
+  padding:.7rem 1.2rem;font-family:var(--display);font-weight:600;font-size:.98rem;transition:background .15s,transform .15s}
+.seg:hover{background:#fff;color:var(--red-700);transform:translateY(-2px)}
+
+/* ---------- CTA FINAL ---------- */
+.cta-wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(24px,4vw,56px);align-items:center}
+@media (max-width:820px){.cta-wrap{grid-template-columns:1fr}}
+.cta-form{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:clamp(22px,3.5vw,34px);box-shadow:var(--shadow)}
+.cta-form h3{font-size:1.4rem;margin-bottom:.3rem}
+.cta-form p.sub{color:var(--ink-2);font-size:.95rem;margin-bottom:1.2rem}
+.field{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.9rem}
+.field label{font-size:.82rem;font-weight:600;color:var(--ink-2)}
+.field input{font-family:var(--body);font-size:1rem;padding:.8rem .95rem;border:1.5px solid var(--line);
+  border-radius:12px;background:#fff;color:var(--ink)}
+.field input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px var(--red-050)}
+.cta-ok{display:none;background:#eafaef;border:1px solid #bfe9cc;color:#1c7a3e;border-radius:12px;padding:1rem;font-weight:600}
+.badges{display:flex;flex-wrap:wrap;gap:.6rem 1.4rem;margin-top:1.4rem;color:var(--ink-2);font-size:.92rem}
+.badges span{display:inline-flex;align-items:center;gap:.45rem}
+.badges svg{width:17px;height:17px;color:var(--red)}
+.cta-head h2{font-size:clamp(1.9rem,4.5vw,3rem);margin-bottom:.8rem}
+.cta-head p{color:var(--ink-2);font-size:1.1rem;max-width:44ch}
+
+/* ancoragem sob a navbar fixa */
+section[id]{scroll-margin-top:88px}
+.center .section-head{margin-inline:auto;text-align:center}
+.sec-cta{margin-top:clamp(26px,4vw,42px);display:flex;flex-wrap:wrap;gap:.8rem;align-items:center}
+.center .sec-cta{justify-content:center}
+.section--red .sec-cta .hintlink,.hintlink{color:var(--ink-3);font-size:.9rem}
+.section--red .hintlink{color:var(--on-red-2)}
+
+/* ---------- POR QUE / DIFERENCIAIS ---------- */
+.vp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(14px,2vw,22px)}
+@media (max-width:900px){.vp-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.vp-grid{grid-template-columns:1fr}}
+.vp{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px;display:flex;flex-direction:column;gap:.7rem}
+.vp .ic{width:46px;height:46px;border-radius:13px;background:var(--red-050);color:var(--red);display:grid;place-items:center}
+.vp .ic svg{width:24px;height:24px}
+.vp h3{font-size:1.1rem}
+.vp p{color:var(--ink-2);font-size:.94rem}
+
+/* ---------- COMO FUNCIONA ---------- */
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:clamp(14px,2vw,20px)}
+@media (max-width:900px){.steps{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.steps{grid-template-columns:1fr}}
+.step{background:var(--cream);border:1px solid var(--line);border-radius:var(--radius);padding:22px;display:flex;flex-direction:column;gap:.6rem}
+.step .num{width:40px;height:40px;border-radius:50%;background:var(--red);color:#fff;font-family:var(--display);font-weight:800;display:grid;place-items:center;font-size:1.1rem}
+.step h3{font-size:1.04rem}
+.step p{color:var(--ink-2);font-size:.9rem}
+
+/* ---------- FAIXA CTA DO MEIO ---------- */
+.midcta{background:linear-gradient(120% 130% at 18% 0%,var(--red) 0%,var(--red-700) 65%,var(--red-900) 100%);color:#fff;text-align:center}
+.midcta h2{font-size:clamp(1.8rem,4.4vw,2.9rem);max-width:20ch;margin-inline:auto}
+.midcta p{color:var(--on-red-2);margin:.9rem auto 0;max-width:48ch;font-size:1.08rem}
+.midcta .sec-cta{justify-content:center;margin-top:1.7rem}
+
+/* ---------- PLANOS ---------- */
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.5vw,24px);align-items:stretch}
+@media (max-width:860px){.plans{grid-template-columns:1fr}}
+.plan{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:28px;display:flex;flex-direction:column;gap:1rem;position:relative}
+.plan.pop{border:2px solid var(--red);box-shadow:var(--shadow)}
+.plan .tag{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;font-family:var(--display);font-weight:700;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;padding:.32rem .85rem;border-radius:999px;white-space:nowrap}
+.plan h3{font-size:1.18rem}
+.plan .price{font-family:var(--display);font-weight:800;font-size:2.3rem;line-height:1;color:var(--ink)}
+.plan .price span{font-size:.92rem;color:var(--ink-3);font-weight:600}
+.plan .pdesc{color:var(--ink-2);font-size:.92rem;margin-top:-.4rem}
+.plan .pfeats{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.6rem;flex:1}
+.plan .pfeats li{display:flex;gap:.5rem;align-items:flex-start;font-size:.93rem;color:var(--ink-2)}
+.plan .pfeats .ck{flex:0 0 auto;width:20px;height:20px;border-radius:50%;background:var(--red-050);color:var(--red);display:grid;place-items:center}
+.plan .pfeats .ck svg{width:12px;height:12px}
+
+/* ---------- FAQ ---------- */
+.faq-list{display:flex;flex-direction:column;gap:.7rem;max-width:840px}
+.faq-list details{background:#fff;border:1px solid var(--line);border-radius:14px}
+.faq-list summary{list-style:none;cursor:pointer;padding:1rem 1.2rem;font-family:var(--display);font-weight:700;font-size:1.02rem;display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.faq-list summary::-webkit-details-marker{display:none}
+.faq-list summary::after{content:"+";font-size:1.5rem;color:var(--red);line-height:1}
+.faq-list details[open] summary::after{content:"\2013"}
+.faq-list .fa{padding:0 1.2rem 1.1rem;color:var(--ink-2);font-size:.97rem}
+
+/* ---------- 3 PILARES ---------- */
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(22px,3.5vw,48px)}
+@media (max-width:820px){.pillars{grid-template-columns:1fr}}
+.pillar h3{font-size:1.3rem;margin-bottom:.5rem}
+.pillar>p{color:var(--ink-2);font-size:.98rem;margin-bottom:1.1rem;max-width:34ch}
+.pillar-list{list-style:none;margin:0;padding:0}
+.pillar-list li{display:flex;align-items:center;gap:.75rem;padding:.9rem 0;border-top:1px solid var(--line);
+  font-family:var(--display);font-weight:700;font-size:.98rem;color:var(--red);line-height:1.25}
+.pillar-list li:last-child{border-bottom:1px solid var(--line)}
+.pillar-list .pic{flex:0 0 auto;width:26px;height:26px;color:var(--red)}
+.pillar-list .pic svg{width:24px;height:24px}
+
+/* ---------- FOOTER ---------- */
+footer{background:var(--ink);color:#fff;padding-block:clamp(40px,6vw,64px)}
+.foot-in{display:flex;flex-wrap:wrap;gap:2rem;justify-content:space-between}
+.foot-brand{max-width:320px}
+.foot-brand .brand{color:#fff}
+.foot-brand p{color:rgba(255,255,255,.6);font-size:.92rem;margin-top:.8rem}
+.foot-cols{display:flex;flex-wrap:wrap;gap:2.5rem}
+.foot-col h4{font-family:var(--display);font-size:.82rem;letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(255,255,255,.5);margin:0 0 .9rem}
+.foot-col a{display:block;color:rgba(255,255,255,.8);text-decoration:none;font-size:.95rem;margin-bottom:.55rem}
+.foot-col a:hover{color:var(--gold)}
+.foot-bottom{border-top:1px solid rgba(255,255,255,.12);margin-top:2.4rem;padding-top:1.4rem;
+  display:flex;flex-wrap:wrap;gap:.6rem;justify-content:space-between;color:rgba(255,255,255,.5);font-size:.85rem}
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+
+<!-- ===================== SPLASH (abertura) ===================== -->
+<div id="splash" class="splash" aria-hidden="true">
+  <video id="introvid" playsinline autoplay muted preload="auto">
+    <source src="rango-intro.mp4" type="video/mp4">
+  </video>
+</div>
+<script>
+(function(){
+  var splash=document.getElementById('splash'); if(!splash) return;
+  var vid=document.getElementById('introvid');
+  var seen=false; try{seen=sessionStorage.getItem('rango_intro')==='1';}catch(e){}
+  if(seen){ if(splash.parentNode) splash.parentNode.removeChild(splash); return; }
+  document.body.classList.add('splashing');
+  var done=false;
+  function finish(){ if(done) return; done=true;
+    try{sessionStorage.setItem('rango_intro','1');}catch(e){}
+    splash.classList.add('hide'); document.body.classList.remove('splashing');
+    setTimeout(function(){ if(splash.parentNode) splash.parentNode.removeChild(splash); },650);
+  }
+  if(!vid){ finish(); return; }
+  vid.addEventListener('ended', finish);
+  vid.addEventListener('error', finish);
+  vid.addEventListener('loadeddata', function(){
+    try{ var c=document.createElement('canvas'); c.width=16; c.height=16;
+      var x=c.getContext('2d'); x.drawImage(vid,0,0,16,16);
+      var d=x.getImageData(0,0,16,16).data, idx=[0,15,240,255], r=0,g=0,b=0;
+      idx.forEach(function(i){ r+=d[i*4]; g+=d[i*4+1]; b+=d[i*4+2]; });
+      splash.style.background='rgb('+(r>>2)+','+(g>>2)+','+(b>>2)+')';
+    }catch(e){}
+  });
+  // tocar/clicar adianta e entra na página
+  splash.addEventListener('click', finish);
+  splash.addEventListener('touchstart', finish, {passive:true});
+  var pr = vid.play && vid.play();
+  if(pr && pr.catch){ pr.catch(function(){ finish(); }); }
+  setTimeout(finish, 15000); // trava de segurança caso 'ended' não dispare
+})();
+</script>
+
+<!-- ===================== NAV ===================== -->
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#inicio" aria-label="Rango — início">
+      <span class="brand-logo" role="img" aria-label="Rango"></span>
+    </a>
+    <nav class="nav-links" id="navlinks">
+      <a href="#solucoes">Soluções</a>
+      <a href="#como">Como funciona</a>
+      <a href="#planos">Planos</a>
+      <a href="#depoimentos">Depoimentos</a>
+      <a href="#faq">Dúvidas</a>
+      <a href="#contato">Contato</a>
+      <a class="navlink-mobile" href="https://gestao-lpoint-production.up.railway.app" target="_blank" rel="noopener">Acessar sistema ↗</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="https://gestao-lpoint-production.up.railway.app" target="_blank" rel="noopener" class="btn btn--outline">Acessar sistema</a>
+      <a href="#contato" class="btn btn--primary">Fale com a gente</a>
+    </div>
+    <button class="hamburger" id="burger" aria-label="Abrir menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ===================== HERO (VERMELHO) ===================== -->
+<section class="hero" id="inicio">
+  <div class="wrap hero-in">
+    <div class="hero-copy">
+      <span class="pill"><span class="dot"></span> Do primeiro pedido ao fechamento do caixa</span>
+      <h1>Seu restaurante <em>organizado</em>, sem complicação.</h1>
+      <p class="lede">O Rango é um sistema personalizado para o seu modelo de negócio: mesas, reservas, cardápio digital, comandas, cozinha e pagamento — tudo conectado e em tempo real.</p>
+      <div class="hero-actions">
+        <a href="#contato" class="btn btn--light">Começar agora</a>
+        <a href="#solucoes" class="btn btn--ghost-light">Ver as soluções</a>
+      </div>
+      <div class="hero-trust">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Sem fidelidade</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Suporte de verdade</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Configuração em minutos</span>
+      </div>
+    </div>
+    <div class="hero-mockwrap reveal">
+      <div class="mock" role="img" aria-label="Mapa de mesas do Rango em tempo real">
+        <div class="mock-top"><i></i><i></i><i></i><b>Rango · Salão em tempo real</b></div>
+        <div class="mock-grid">
+          <div class="t free">Mesa 01<small>Livre</small></div>
+          <div class="t busy">Mesa 02<small>Ocupada · R$ 245</small></div>
+          <div class="t pay">Mesa 03<small>Fechando conta</small></div>
+          <div class="t busy">Mesa 04<small>Ocupada · R$ 88</small></div>
+          <div class="t free">Mesa 05<small>Livre</small></div>
+          <div class="t free">Mesa 06<small>Livre</small></div>
+        </div>
+        <div class="mock-bar"><span>Comanda #00152 · Mesa 02</span><span class="v">R$ 245,90</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FAIXA MOBILIDADE ===================== -->
+<section class="band-mobile">
+  <div class="wrap band-in">
+    <div class="band-copy reveal">
+      <span class="eyebrow">No celular e no tablet</span>
+      <h2>O salão na palma da mão.</h2>
+      <p>O Rango não prende sua equipe no caixa. O garçom atende, lança o pedido e fecha a conta direto na mesa — pelo celular ou tablet, em qualquer navegador.</p>
+    </div>
+    <div class="band-devices reveal">
+      <span class="dev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg> Celular</span>
+      <span class="dev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M11 18h2"/></svg> Tablet</span>
+      <span class="dev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg> Qualquer navegador</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== POR QUE RANGO (BRANCO) ===================== -->
+<section class="section section--paper" id="porque">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Por que Rango</span>
+      <h2>Tudo que o salão precisa, num lugar só</h2>
+      <p>Menos papel e calculadora, mais controle. O Rango conecta pedido, cozinha e caixa para o seu restaurante girar mais rápido.</p>
+    </div>
+    <div class="vp-grid">
+      <div class="vp reveal">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h8l-1 8 10-12h-8l1-8z"/></svg></span>
+        <h3>Tempo real</h3>
+        <p>Mesa, pedido e cozinha sincronizados na hora, sem atualizar a tela.</p>
+      </div>
+      <div class="vp reveal">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg></span>
+        <h3>Na palma da mão</h3>
+        <p>Funciona no celular e no tablet. A equipe opera direto da mesa.</p>
+      </div>
+      <div class="vp reveal">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <h3>Sem fidelidade</h3>
+        <p>Comece em minutos e fique porque funciona, não porque é obrigado.</p>
+      </div>
+      <div class="vp reveal">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span>
+        <h3>Você no controle</h3>
+        <p>Relatórios de faturamento, tempos e produtos para decidir com dados.</p>
+      </div>
+    </div>
+    <div class="sec-cta center" style="justify-content:center">
+      <a href="#solucoes" class="btn btn--primary">Ver as soluções</a>
+      <a href="#contato" class="btn btn--outline">Falar com a gente</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ANTES E DEPOIS (CREME) ===================== -->
+<section class="section section--cream" id="resultados">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Antes e depois</span>
+      <h2>Veja a diferença que o Rango faz</h2>
+      <p>Compare a rotina do seu restaurante com e sem o Rango.</p>
+    </div>
+    <div class="ba">
+      <div class="ba-col bad reveal">
+        <h3><span class="ba-tag bad">Sem Rango</span></h3>
+        <ul class="ba-list">
+          <li><span class="ic">✕</span><span><b>Comanda no papel se perde</b><small>Pedido anotado errado, item esquecido, retrabalho na cozinha.</small></span></li>
+          <li><span class="ic">✕</span><span><b>Fechar a conta é uma novela</b><small>Somar na calculadora, dividir no olho, fila no caixa.</small></span></li>
+          <li><span class="ic">✕</span><span><b>Cozinha e bar no grito</b><small>Pedido vai e volta, ninguém sabe o que está pronto.</small></span></li>
+          <li><span class="ic">✕</span><span><b>Você não sabe quanto lucra</b><small>Sem relatório, a decisão é no achismo.</small></span></li>
+        </ul>
+      </div>
+      <div class="ba-col good reveal">
+        <h3><span class="ba-tag good">Com Rango</span></h3>
+        <ul class="ba-list">
+          <li><span class="ic">✓</span><span><b>Pedido direto na comanda digital</b><small>O garçom lança na mesa e vai certo pra cozinha e o bar.</small></span></li>
+          <li><span class="ic">✓</span><span><b>Conta fecha em segundos</b><small>Total automático, pagamento único ou dividido, mesa liberada.</small></span></li>
+          <li><span class="ic">✓</span><span><b>Cozinha organizada por setor</b><small>Cada pedido aparece no painel certo, com cronômetro.</small></span></li>
+          <li><span class="ic">✓</span><span><b>Você enxerga o negócio</b><small>Faturamento, tempo médio e itens que mais saem, em tempo real.</small></span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="sec-cta center" style="justify-content:center">
+      <a href="#contato" class="btn btn--primary">Quero essa rotina no meu restaurante</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 3 PILARES (BRANCO) ===================== -->
+<section class="section section--paper" id="pilares">
+  <div class="wrap">
+    <div class="section-head center reveal">
+      <span class="eyebrow">O que a Rango faz pelo seu negócio</span>
+      <h2>Mais fluxo, mais experiências, mais clientes fiéis</h2>
+    </div>
+    <div class="pillars">
+      <div class="pillar reveal">
+        <h3>Gestão de reservas e fila de espera</h3>
+        <p>Ferramenta completa que centraliza todas as reservas em um único lugar.</p>
+        <ul class="pillar-list">
+          <li><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-7"/><path d="M14 8h7v7"/></svg></span> Aumento de fluxo e rotatividade</li>
+          <li><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Captação de dados dos clientes</li>
+          <li><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9.5 16.5L12 14l2.5 2.5"/></svg></span> Redução de até 30% da taxa de no-show</li>
+        </ul>
+      </div>
+      <div class="pillar reveal">
+        <h3>Venda de Experiências</h3>
+        <p>Ofereça momentos especiais para os clientes de forma prática e organizada.</p>
+        <ul class="pillar-list">
+          <li><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.3a2.4 2.4 0 0 1 2.5-2 2.2 2.2 0 0 1 0 4.4 2.2 2.2 0 0 0 0 4.4 2.4 2.4 0 0 1-2.5-2"/></svg></span> Monetização extra</li>
+          <li><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8-5.4 2.8 1-6L3.3 9.4l6-.9z"/></svg></span> Experiências exclusivas para os clientes</li>
+          <li><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3"/></svg></span> Aumento do ticket médio por pessoa</li>
+        </ul>
+      </div>
+      <div class="pillar reveal">
+        <h3>CRM &amp; Marketing</h3>
+        <p>Fidelize clientes, mensure NPS e personalize a experiência.</p>
+        <ul class="pillar-list">
+          <li><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span> Captação de novos clientes</li>
+          <li><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.2 5.2 0 0 0-7.4 0L12 7l-1.4-1.4a5.2 5.2 0 1 0-7.4 7.4L12 21l8.8-8a5.2 5.2 0 0 0 0-7.4z"/></svg></span> Aumento da fidelização e recorrência</li>
+          <li><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.5V19l4 2v-8.5z"/></svg></span> Perfil de cliente e segmentação de base</li>
+        </ul>
+      </div>
+    </div>
+    <div class="sec-cta center" style="justify-content:center">
+      <a href="#contato" class="btn btn--primary">Quero essas ferramentas</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SOLUÇÕES / MÓDULOS (VERMELHO, abas) ===================== -->
+<section class="section section--red" id="solucoes">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Soluções</span>
+      <h2>Um sistema. Tudo conectado.</h2>
+      <p>Módulos que funcionam juntos para simplificar toda a operação do seu restaurante — do salão à cozinha.</p>
+    </div>
+    <div class="mods">
+      <div class="mod-tabs" role="tablist" aria-label="Módulos do Rango" id="modtabs">
+        <button class="mod-tab" role="tab" aria-selected="true" aria-controls="p1" id="t1"><span class="n">01</span> Mesas &amp; Operação</button>
+        <button class="mod-tab" role="tab" aria-selected="false" aria-controls="p2" id="t2" tabindex="-1"><span class="n">02</span> Reservas</button>
+        <button class="mod-tab" role="tab" aria-selected="false" aria-controls="p3" id="t3" tabindex="-1"><span class="n">03</span> Cardápio digital</button>
+        <button class="mod-tab" role="tab" aria-selected="false" aria-controls="p4" id="t4" tabindex="-1"><span class="n">04</span> Comandas &amp; Pedidos</button>
+        <button class="mod-tab" role="tab" aria-selected="false" aria-controls="p5" id="t5" tabindex="-1"><span class="n">05</span> Central de Pedidos</button>
+        <button class="mod-tab" role="tab" aria-selected="false" aria-controls="p6" id="t6" tabindex="-1"><span class="n">06</span> Pagamentos</button>
+        <button class="mod-tab" role="tab" aria-selected="false" aria-controls="p7" id="t7" tabindex="-1"><span class="n">07</span> Relatórios</button>
+      </div>
+      <div class="mod-stage">
+        <div class="mod-panel" role="tabpanel" id="p1" aria-labelledby="t1">
+          <h3>Mesas &amp; Operação</h3>
+          <p>Veja o status de todas as mesas em tempo real: livre, reservada, ocupada ou fechando conta. Agrupe, bloqueie e libere com um toque.</p>
+          <ul class="mod-feats">
+            <li><span class="ck">✓</span> Mapa do salão ao vivo</li>
+            <li><span class="ck">✓</span> Agrupar e dividir mesas</li>
+            <li><span class="ck">✓</span> Walk-in com alocação automática</li>
+            <li><span class="ck">✓</span> Separe seus ambientes</li>
+          </ul>
+        </div>
+        <div class="mod-panel" role="tabpanel" id="p2" aria-labelledby="t2" hidden>
+          <h3>Reservas</h3>
+          <p>O cliente reserva pelo link e o Rango escolhe a melhor mesa por horário, capacidade e ambiente — sem conflito de agenda.</p>
+          <ul class="mod-feats">
+            <li><span class="ck">✓</span> Página de reserva própria</li>
+            <li><span class="ck">✓</span> Mesa escolhida automaticamente</li>
+            <li><span class="ck">✓</span> Check-in e lista de espera</li>
+            <li><span class="ck">✓</span> Lembretes para o cliente</li>
+          </ul>
+        </div>
+        <div class="mod-panel" role="tabpanel" id="p3" aria-labelledby="t3" hidden>
+          <h3>Cardápio digital</h3>
+          <p>Seu cardápio completo dentro do sistema: categorias, fotos, descrições, adicionais e sabores — editável a qualquer hora.</p>
+          <ul class="mod-feats">
+            <li><span class="ck">✓</span> Categorias e adicionais</li>
+            <li><span class="ck">✓</span> Preço e disponibilidade na hora</li>
+            <li><span class="ck">✓</span> Opções e observações do item</li>
+            <li><span class="ck">✓</span> Setor de produção por produto</li>
+          </ul>
+        </div>
+        <div class="mod-panel" role="tabpanel" id="p4" aria-labelledby="t4" hidden>
+          <h3>Comandas &amp; Pedidos</h3>
+          <p>Cada mesa tem sua comanda. O garçom lança o pedido, o sistema soma em tempo real e guarda quem lançou cada item.</p>
+          <ul class="mod-feats">
+            <li><span class="ck">✓</span> Comanda por mesa</li>
+            <li><span class="ck">✓</span> Consumo somado ao vivo</li>
+            <li><span class="ck">✓</span> Pedido complemento</li>
+            <li><span class="ck">✓</span> Cancelamento com motivo</li>
+          </ul>
+        </div>
+        <div class="mod-panel" role="tabpanel" id="p5" aria-labelledby="t5" hidden>
+          <h3>Central de Pedidos (KDS)</h3>
+          <p>Um pedido só, dividido automaticamente por setor. Cozinha e bar recebem seus itens com cronômetro e alerta de atraso.</p>
+          <ul class="mod-feats">
+            <li><span class="ck">✓</span> Painel de Cozinha e Bar</li>
+            <li><span class="ck">✓</span> Cronômetro por pedido</li>
+            <li><span class="ck">✓</span> Alerta de pedido demorado</li>
+            <li><span class="ck">✓</span> Status: preparo, pronto, entregue</li>
+          </ul>
+        </div>
+        <div class="mod-panel" role="tabpanel" id="p6" aria-labelledby="t6" hidden>
+          <h3>Pagamentos</h3>
+          <p>Registre o pagamento do jeito que o cliente pagou: único ou dividido entre as pessoas. A mesa só libera quando a conta está quitada.</p>
+          <ul class="mod-feats">
+            <li><span class="ck">✓</span> Pagamento único ou dividido</li>
+            <li><span class="ck">✓</span> Dinheiro, Pix, débito e crédito</li>
+            <li><span class="ck">✓</span> Pago x restante na tela</li>
+            <li><span class="ck">✓</span> Mesa liberada ao quitar</li>
+          </ul>
+        </div>
+        <div class="mod-panel" role="tabpanel" id="p7" aria-labelledby="t7" hidden>
+          <h3>Relatórios &amp; Desempenho</h3>
+          <p>Saiba quanto vendeu, o tempo médio da cozinha e do bar, os itens que mais saem e o desempenho de cada garçom.</p>
+          <ul class="mod-feats">
+            <li><span class="ck">✓</span> Faturamento por período</li>
+            <li><span class="ck">✓</span> Tempo médio por setor</li>
+            <li><span class="ck">✓</span> Ranking de produtos</li>
+            <li><span class="ck">✓</span> Desempenho por garçom</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="sec-cta center" style="justify-content:center">
+      <a href="#contato" class="btn btn--light">Testar com meu cardápio</a>
+      <a href="#planos" class="btn btn--ghost-light">Ver planos</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== COMO FUNCIONA (BRANCO) ===================== -->
+<section class="section section--paper" id="como">
+  <div class="wrap">
+    <div class="section-head center reveal">
+      <span class="eyebrow">Como funciona</span>
+      <h2>Do pedido ao pagamento em 5 passos</h2>
+      <p>Simples para a equipe aprender em um dia — e rápido no horário de pico.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><span class="num">1</span><h3>Abra a mesa</h3><p>Toque na mesa livre e abra a comanda em segundos.</p></div>
+      <div class="step reveal"><span class="num">2</span><h3>Lance o pedido</h3><p>Escolha os itens no cardápio, com adicionais e observações.</p></div>
+      <div class="step reveal"><span class="num">3</span><h3>Cozinha e bar preparam</h3><p>Cada item cai no painel do setor certo, com cronômetro.</p></div>
+      <div class="step reveal"><span class="num">4</span><h3>Cliente pede a conta</h3><p>Total somado na hora, pagamento único ou dividido.</p></div>
+      <div class="step reveal"><span class="num">5</span><h3>Mesa liberada</h3><p>Conta quitada, mesa livre de novo — pronto pro próximo.</p></div>
+    </div>
+    <div class="sec-cta center" style="justify-content:center">
+      <a href="#contato" class="btn btn--primary">Começar agora</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FAIXA CTA (VERMELHO) ===================== -->
+<section class="section midcta">
+  <div class="wrap">
+    <h2 class="reveal">Comece hoje e veja o resultado já no primeiro serviço</h2>
+    <p class="reveal">Configuração rápida, sem fidelidade e no celular da sua equipe. Fale com a gente e receba uma demonstração do Rango no seu restaurante.</p>
+    <div class="sec-cta reveal">
+      <a href="#contato" class="btn btn--light">Quero uma demonstração</a>
+      <a href="#planos" class="btn btn--ghost-light">Ver planos e preços</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== DEPOIMENTOS (CREME) ===================== -->
+<section class="section section--cream" id="depoimentos">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Depoimentos</span>
+      <h2>Feito para a rotina de quem vive o salão</h2>
+      <p>O tipo de resultado que um restaurante organizado alcança no dia a dia.</p>
+    </div>
+    <div class="quotes">
+      <div class="quote reveal">
+        <div class="stars">★★★★★</div>
+        <p>“A comanda digital acabou com o erro de pedido. A equipe rende mais e o cliente espera menos.”</p>
+        <div class="metric">-40%<small>tempo de fechamento</small></div>
+        <div class="who"><span class="av">MO</span><span><b>Marcos Oliveira</b><small>Dono · Burger House</small></span></div>
+      </div>
+      <div class="quote reveal">
+        <div class="stars">★★★★★</div>
+        <p>“Dividir a conta entre os clientes ficou simples. Ninguém mais trava no caixa na hora de pagar.”</p>
+        <div class="metric">+30%<small>giro de mesas</small></div>
+        <div class="who"><span class="av">CS</span><span><b>Camila Santos</b><small>Gestora · Cantina da Cami</small></span></div>
+      </div>
+      <div class="quote reveal">
+        <div class="stars">★★★★★</div>
+        <p>“Com os relatórios descobri os pratos que seguravam a cozinha e ajustei o cardápio. O lucro subiu.”</p>
+        <div class="metric">+22%<small>lucro no trimestre</small></div>
+        <div class="who"><span class="av">RL</span><span><b>Roberto Lima</b><small>Proprietário · Trattoria Bella</small></span></div>
+      </div>
+    </div>
+    <p class="illus-note">Depoimentos ilustrativos — troque pelos dos seus próprios clientes.</p>
+  </div>
+</section>
+
+<!-- ===================== PLANOS (BRANCO) ===================== -->
+<section class="section section--paper" id="planos">
+  <div class="wrap">
+    <div class="section-head center reveal">
+      <span class="eyebrow">Planos</span>
+      <h2>Escolha o plano do seu restaurante</h2>
+      <p>Comece simples e cresça quando quiser. Sem fidelidade, cancele quando precisar.</p>
+    </div>
+    <div class="plans">
+      <div class="plan reveal">
+        <h3>Essencial</h3>
+        <div class="price">R$ 89<span>/mês</span></div>
+        <p class="pdesc">Para começar a organizar o salão.</p>
+        <ul class="pfeats">
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Mapa de mesas em tempo real</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Comandas e pedidos</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Cardápio digital</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Pagamento único e dividido</li>
+        </ul>
+        <a href="#contato" class="btn btn--outline" style="justify-content:center">Começar</a>
+      </div>
+      <div class="plan pop reveal">
+        <span class="tag">Mais popular</span>
+        <h3>Profissional</h3>
+        <div class="price">R$ 149<span>/mês</span></div>
+        <p class="pdesc">Para o restaurante que vive o pico.</p>
+        <ul class="pfeats">
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Tudo do Essencial</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Central de Pedidos (Cozinha e Bar)</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Reservas com alocação automática</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Relatórios e desempenho</li>
+        </ul>
+        <a href="#contato" class="btn btn--primary" style="justify-content:center">Quero o Profissional</a>
+      </div>
+      <div class="plan reveal">
+        <h3>Completo</h3>
+        <div class="price">R$ 249<span>/mês</span></div>
+        <p class="pdesc">Para redes e operações grandes.</p>
+        <ul class="pfeats">
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Tudo do Profissional</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Múltiplos ambientes e unidades</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Auditoria completa de ações</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span> Suporte prioritário</li>
+        </ul>
+        <a href="#contato" class="btn btn--outline" style="justify-content:center">Falar com a gente</a>
+      </div>
+    </div>
+    <p class="illus-note" style="text-align:center">Valores de exemplo para o modelo — ajuste aos preços do seu negócio.</p>
+  </div>
+</section>
+
+<!-- ===================== FAQ (CREME) ===================== -->
+<section class="section section--cream" id="faq">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Dúvidas frequentes</span>
+      <h2>Perguntas que todo restaurante faz</h2>
+      <p>E se ficar qualquer dúvida, a gente responde rapidinho no contato.</p>
+    </div>
+    <div class="faq-list reveal">
+      <details open><summary>O Rango funciona no celular e no tablet?</summary><div class="fa">Sim. O Rango roda no navegador do celular, do tablet e do computador. A equipe de salão opera direto da mesa, sem precisar voltar ao caixa.</div></details>
+      <details><summary>Preciso instalar algum programa?</summary><div class="fa">Não. É só abrir no navegador e entrar com o seu login. Nada para instalar nem atualizar manualmente.</div></details>
+      <details><summary>Tem fidelidade ou multa para cancelar?</summary><div class="fa">Não há fidelidade. Você usa enquanto faz sentido para o seu restaurante e cancela quando quiser.</div></details>
+      <details><summary>Dá para dividir a conta entre os clientes?</summary><div class="fa">Sim. O pagamento pode ser único ou dividido — igualmente entre as pessoas ou por valor e forma de pagamento. A mesa só libera quando a conta está quitada.</div></details>
+      <details><summary>A cozinha e o bar recebem os pedidos automaticamente?</summary><div class="fa">Sim. Um pedido só é distribuído por setor: os itens da cozinha vão para o painel da cozinha e as bebidas para o do bar, com cronômetro e alerta de atraso.</div></details>
+      <details><summary>Consigo acompanhar o faturamento e os tempos?</summary><div class="fa">Sim. Você vê faturamento por período, tempo médio da cozinha e do bar, itens que mais saem e o desempenho de cada garçom.</div></details>
+    </div>
+    <div class="sec-cta" style="justify-content:flex-start">
+      <a href="#contato" class="btn btn--primary">Ainda tenho dúvidas — falar com a gente</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SEGMENTOS (VERMELHO) ===================== -->
+<section class="section section--red" id="segmentos">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Para todo tipo de food service</span>
+      <h2>Um sistema personalizado para o seu modelo de negócio</h2>
+      <p>Seja qual for o seu segmento, o Rango se adapta à sua operação — da configuração dos ambientes ao fluxo da cozinha.</p>
+    </div>
+    <div class="segs reveal">
+      <span class="seg">Restaurante</span><span class="seg">Bar</span><span class="seg">Hamburgueria</span>
+      <span class="seg">Pizzaria</span><span class="seg">Cafeteria</span><span class="seg">Açaiteria</span>
+      <span class="seg">Sorveteria</span><span class="seg">Lanchonete</span><span class="seg">Pastelaria</span>
+      <span class="seg">Padaria</span><span class="seg">Food Truck</span><span class="seg">Rooftop &amp; Lounge</span>
+      <span class="seg">Dark Kitchen</span><span class="seg">Franquia</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CTA FINAL (BRANCO) ===================== -->
+<section class="section section--paper" id="contato">
+  <div class="wrap cta-wrap">
+    <div class="cta-head reveal">
+      <span class="eyebrow">Pronto pra começar?</span>
+      <h2>Organize seu restaurante com o Rango</h2>
+      <p>Deixe seu contato e a gente mostra, na prática, como o Rango simplifica o seu salão.</p>
+      <div class="badges">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Sem contrato de fidelidade</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Suporte humano</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Configuração rápida</span>
+      </div>
+    </div>
+    <form class="cta-form reveal" id="leadform" novalidate>
+      <h3>Fale com a gente</h3>
+      <p class="sub">Entramos em contato em poucos minutos.</p>
+      <div class="field"><label for="nome">Seu nome</label><input id="nome" name="nome" type="text" autocomplete="name" placeholder="Como podemos te chamar?" required></div>
+      <div class="field"><label for="rest">Nome do restaurante</label><input id="rest" name="rest" type="text" placeholder="Ex.: Cantina da Esquina" required></div>
+      <div class="field"><label for="wpp">WhatsApp</label><input id="wpp" name="wpp" type="tel" inputmode="tel" autocomplete="tel" placeholder="(11) 99999-9999" required></div>
+      <button type="submit" class="btn btn--primary" style="width:100%;justify-content:center">Quero conhecer o Rango</button>
+      <div class="cta-ok" id="ctaok">✓ Recebemos seu contato! Em breve a equipe Rango fala com você.</div>
+    </form>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+  <div class="wrap">
+    <div class="foot-in">
+      <div class="foot-brand">
+        <a class="brand" href="#inicio">
+          <span class="brand-logo" role="img" aria-label="Rango"></span>
+        </a>
+        <p>O sistema completo para o seu salão — do primeiro pedido ao fechamento do caixa.</p>
+      </div>
+      <div class="foot-cols">
+        <div class="foot-col">
+          <h4>Produto</h4>
+          <a href="#solucoes">Mesas &amp; Operação</a>
+          <a href="#solucoes">Cardápio digital</a>
+          <a href="#solucoes">Central de Pedidos</a>
+          <a href="#solucoes">Pagamentos</a>
+        </div>
+        <div class="foot-col">
+          <h4>Empresa</h4>
+          <a href="#resultados">Resultados</a>
+          <a href="#depoimentos">Depoimentos</a>
+          <a href="#segmentos">Segmentos</a>
+          <a href="#contato">Contato</a>
+        </div>
+        <div class="foot-col">
+          <h4>Fale com a gente</h4>
+          <a href="#contato">Começar agora</a>
+          <a href="#contato">Agendar demonstração</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Rango. Todos os direitos reservados.</span>
+      <span>Feito para restaurantes que querem crescer.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- WhatsApp flutuante (acompanha a rolagem) -->
+<a class="wa-fab" id="wafab" href="https://wa.me/55XXXXXXXXXXX?text=Ol%C3%A1!%20Quero%20conhecer%20o%20Rango%20para%20o%20meu%20restaurante." target="_blank" rel="noopener" aria-label="Falar no WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 0 1 8.413 3.488 11.82 11.82 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 0 0 1.506 5.26l-.999 3.648 3.993-1.607zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.297-.496.099-.198.05-.372-.025-.521-.074-.148-.669-1.611-.916-2.206-.242-.579-.487-.5-.669-.51a12.84 12.84 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+</a>
+
+<script>
+(function(){
+  "use strict";
+  // Menu mobile
+  var burger=document.getElementById('burger'),links=document.getElementById('navlinks');
+  if(burger&&links){
+    burger.addEventListener('click',function(){
+      var open=links.getAttribute('data-open')==='true';
+      links.setAttribute('data-open',String(!open));
+      burger.setAttribute('aria-expanded',String(!open));
+    });
+    links.addEventListener('click',function(e){
+      if(e.target.tagName==='A'){links.setAttribute('data-open','false');burger.setAttribute('aria-expanded','false');}
+    });
+  }
+  // Abas dos módulos
+  var tabs=Array.prototype.slice.call(document.querySelectorAll('#modtabs [role=tab]'));
+  function select(tab){
+    tabs.forEach(function(t){
+      var on=t===tab;
+      t.setAttribute('aria-selected',String(on));
+      t.tabIndex=on?0:-1;
+      var panel=document.getElementById(t.getAttribute('aria-controls'));
+      if(panel)panel.hidden=!on;
+    });
+  }
+  tabs.forEach(function(t,i){
+    t.addEventListener('click',function(){select(t);});
+    t.addEventListener('keydown',function(e){
+      var n=null;
+      if(e.key==='ArrowDown'||e.key==='ArrowRight')n=tabs[(i+1)%tabs.length];
+      else if(e.key==='ArrowUp'||e.key==='ArrowLeft')n=tabs[(i-1+tabs.length)%tabs.length];
+      if(n){e.preventDefault();n.focus();select(n);}
+    });
+  });
+  // Formulário (sem backend — apenas confirma na própria página)
+  var form=document.getElementById('leadform'),ok=document.getElementById('ctaok');
+  if(form){
+    form.addEventListener('submit',function(e){
+      e.preventDefault();
+      if(!form.checkValidity()){form.reportValidity&&form.reportValidity();return;}
+      form.querySelectorAll('.field, button[type=submit]').forEach(function(el){el.style.display='none';});
+      if(ok)ok.style.display='block';
+    });
+  }
+  // Reveal suave ao rolar (parte de estado visível por padrão quando sem JS)
+  var io=('IntersectionObserver'in window)?new IntersectionObserver(function(es){
+    es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});
+  },{rootMargin:'0px 0px -8% 0px'}):null;
+  document.querySelectorAll('.reveal').forEach(function(el){
+    if(io)io.observe(el);else el.classList.add('in');
+  });
+})();
+</script>
+
+</body>
+</html>

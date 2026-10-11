@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rango — Sistema operacional para restaurantes, bares e adegas</title>
+<meta name="description" content="Rango é a plataforma profissional de gestão para restaurantes, bares e adegas: salão, comandas, cozinha, cardápio digital, delivery, estoque, pagamentos e relatórios — tudo em tempo real." />
+<link rel="stylesheet" href="/css/styles.css" />
+<style>
+  /* Landing Rango — identidade azul oficial sobre fundo branco. */
+  body{ background:#fff; color:var(--ink); }
+  .lp-top{ position:sticky; top:0; z-index:40; background:rgba(255,255,255,.92); backdrop-filter:saturate(1.3) blur(8px); border-bottom:1px solid var(--line); }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:14px 0; }
+  .logo{ display:flex; align-items:center; gap:10px; }
+  /* Fundo claro → logo escura (#021324), conforme regra de contraste da marca. */
+  .rango-logo{ display:inline-block; height:32px; width:auto; aspect-ratio:700/449; background:var(--blue-900);
+    -webkit-mask:url(/rango-logo.png) no-repeat left center/contain; mask:url(/rango-logo.png) no-repeat left center/contain; }
+  .rango-logo.light{ background:#fff; }
+  .nav-actions{ display:flex; align-items:center; gap:10px; }
+
+  .hero{ background:
+      radial-gradient(1100px 520px at 84% -10%, rgba(41,135,214,.14) 0%, transparent 60%),
+      radial-gradient(800px 420px at 5% 0%, rgba(5,34,61,.06) 0%, transparent 55%), #fff; }
+  .hero-wrap{ display:grid; grid-template-columns:1.08fr .92fr; gap:46px; align-items:center; padding:52px 0 64px; }
+  @media (max-width:960px){ .hero-wrap{ grid-template-columns:1fr; gap:30px; padding:34px 0 40px; } }
+  .eyebrow{ display:inline-flex; align-items:center; gap:7px; font-weight:800; font-size:12.5px; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--blue); background:var(--brand-soft); padding:6px 12px; border-radius:999px; }
+  .hero h1{ font-size:46px; line-height:1.07; margin:16px 0 0; color:var(--blue-900); }
+  .hero h1 span{ color:var(--blue); }
+  @media (max-width:960px){ .hero h1{ font-size:33px; } }
+  .hero .lead{ font-size:18px; color:var(--ink-2); max-width:540px; margin-top:14px; }
+  .hero-cta{ display:flex; gap:12px; flex-wrap:wrap; margin-top:26px; }
+  .feats{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:30px; }
+  @media (max-width:520px){ .feats{ grid-template-columns:1fr; } }
+  .feat{ display:flex; gap:12px; align-items:flex-start; font-size:14.5px; }
+  .feat .fi{ width:38px; height:38px; border-radius:11px; background:var(--brand-soft); color:var(--blue);
+    display:grid; place-items:center; flex:0 0 auto; }
+  .feat .fi svg{ width:20px; height:20px; display:block; }
+  .feat b{ color:var(--blue-900); }
+
+  /* Cartão lateral (login do cliente) */
+  .side-card{ box-shadow:var(--shadow-lg); border:1px solid var(--line); }
+  .side-card h2{ color:var(--blue-900); margin:0 0 4px; }
+
+  /* Faixa de recursos */
+  .band{ background:var(--blue-900); color:#eaf1f9; padding:48px 0; }
+  .band h2{ color:#fff; font-size:28px; text-align:center; margin:0 0 6px; }
+  .band .sub{ text-align:center; color:#a9bed4; max-width:620px; margin:0 auto 30px; }
+  .mods{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  @media (max-width:860px){ .mods{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:520px){ .mods{ grid-template-columns:1fr; } }
+  .mod{ background:var(--blue-800); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:18px; }
+  .mod .mi{ width:40px; height:40px; border-radius:11px; background:rgba(41,135,214,.22); color:var(--blue-light);
+    display:grid; place-items:center; margin-bottom:12px; }
+  .mod .mi svg{ width:22px; height:22px; }
+  .mod h3{ color:#fff; font-size:16px; margin:0 0 5px; }
+  .mod p{ color:#a9bed4; font-size:13.5px; margin:0; }
+
+  /* Seção de captação de lead */
+  .lead-sec{ background:
+      radial-gradient(900px 360px at 80% 0%, rgba(41,135,214,.10) 0%, transparent 60%), var(--bg);
+    padding:56px 0; }
+  .lead-grid{ display:grid; grid-template-columns:1fr 1.05fr; gap:40px; align-items:center; }
+  @media (max-width:900px){ .lead-grid{ grid-template-columns:1fr; gap:26px; } }
+  .lead-grid h2{ font-size:30px; color:var(--blue-900); margin:0 0 10px; }
+  .lead-grid .lead-copy p{ color:var(--ink-2); font-size:16px; max-width:460px; }
+  .wa-chips{ display:flex; flex-direction:column; gap:10px; margin-top:18px; }
+  .wa-chip{ display:inline-flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--line);
+    border-radius:12px; padding:11px 14px; font-weight:700; color:var(--blue-900); text-decoration:none; }
+  .wa-chip svg{ width:20px; height:20px; color:#1f9d4e; flex:0 0 auto; }
+  .wa-chip:hover{ border-color:var(--blue); text-decoration:none; }
+
+  .lead-card{ background:#fff; border:1px solid var(--line); border-radius:20px; padding:26px; box-shadow:var(--shadow-lg); }
+  .lead-card label{ color:var(--blue-900); }
+  .lead-card input, .lead-card textarea{ border-color:#cfe0f2; }
+  .lead-card .req{ color:var(--red); }
+  .lead-ok{ text-align:center; padding:14px 6px; }
+  .lead-ok .ic{ width:62px; height:62px; border-radius:50%; background:var(--brand-soft); color:var(--blue);
+    display:grid; place-items:center; margin:0 auto 14px; }
+  .lead-ok .ic svg{ width:32px; height:32px; }
+  .lead-ok h3{ color:var(--blue-900); font-size:22px; margin:0 0 6px; }
+  .lead-ok p{ color:var(--ink-2); margin:0 auto 16px; max-width:360px; }
+
+  .foot{ padding:28px 0 42px; color:var(--ink-3); font-size:13px; text-align:center; }
+  .foot b{ color:var(--blue-900); }
+</style>
+</head>
+<body>
+
+<div class="lp-top">
+  <div class="container">
+    <div class="nav">
+      <div class="logo"><span class="rango-logo" role="img" aria-label="Rango"></span></div>
+      <div class="nav-actions">
+        <a class="btn ghost sm" href="#entrar">Entrar</a>
+        <a class="btn sm" href="#lead">Quero conhecer</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-wrap">
+      <div>
+        <span class="eyebrow">A plataforma do seu restaurante</span>
+        <h1>O sistema que <span>organiza a sua operação</span> de ponta a ponta.</h1>
+        <p class="lead">Salão, comandas, cozinha, cardápio digital, delivery, estoque, pagamentos e relatórios —
+          numa só plataforma profissional, em tempo real. O <b>Rango</b> coloca a operação inteira na palma da sua mão,
+          seja um restaurante, um bar ou uma adega.</p>
+        <div class="hero-cta">
+          <a class="btn" href="#lead">Quero conhecer o RANGO</a>
+          <a class="btn ghost" href="#recursos">Conheça a plataforma</a>
+        </div>
+        <div class="feats">
+          <div class="feat"><span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg></span><div><b>Salão em tempo real</b><br><span class="muted">Mesas, ocupação e giro ao vivo.</span></div></div>
+          <div class="feat"><span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 18.5h4"/></svg></span><div><b>Cardápio digital</b><br><span class="muted">Pedidos por QR Code e delivery.</span></div></div>
+          <div class="feat"><span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13h12v6a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z"/><path d="M7 13a5 5 0 0 1 10 0"/><path d="M12 3v3M8.5 4.5l1 2M15.5 4.5l-1 2"/></svg></span><div><b>Cozinha e KDS</b><br><span class="muted">Produção e impressão automática.</span></div></div>
+          <div class="feat"><span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15v3M12 10v8M17 6v12"/></svg></span><div><b>Gestão completa</b><br><span class="muted">Financeiro, estoque e relatórios.</span></div></div>
+        </div>
+      </div>
+
+      <div class="card side-card" id="entrar">
+        <h2>Entrar</h2>
+        <p class="muted small" style="margin:0 0 16px">Acesse o painel do seu estabelecimento.</p>
+        <form id="form-login" class="stack">
+          <div class="field"><label>Usuário</label><input type="text" name="email" placeholder="seu login" required autocomplete="username"></div>
+          <div class="field"><label>Senha</label><input type="password" name="password" placeholder="••••••••" required autocomplete="current-password"></div>
+          <button class="btn block" type="submit">Entrar no painel</button>
+        </form>
+        <p class="tiny" style="color:var(--ink-3);margin:14px 0 0;text-align:center">Ainda não é cliente?
+          <a href="#lead" style="color:var(--blue);font-weight:700">Leve o RANGO para o seu restaurante.</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="recursos">
+  <div class="container">
+    <h2>Tudo o que a sua operação precisa</h2>
+    <p class="sub">Uma plataforma profissional — não um marketplace. O Rango é o sistema que roda por dentro do seu negócio.</p>
+    <div class="mods">
+      <div class="mod"><div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg></div><h3>Salão & reservas</h3><p>Mapa do salão, alocação inteligente de mesas e ciclo de ocupação em tempo real.</p></div>
+      <div class="mod"><div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></div><h3>Comandas & pedidos</h3><p>Comanda digital, garçom pelo celular e acompanhamento de cada pedido.</p></div>
+      <div class="mod"><div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 18.5h4"/></svg></div><h3>Cardápio digital & delivery</h3><p>Página pública por QR Code, pedidos online e fluxo de entrega completo.</p></div>
+      <div class="mod"><div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4zM3 7v10l9 4 9-4V7"/></svg></div><h3>Adega & bar</h3><p>Venda por unidade e por caixa/fardo, doses, drinks, receitas e estoque preciso.</p></div>
+      <div class="mod"><div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><h3>Pagamentos & financeiro</h3><p>Pagamentos integrados, controle de caixa e visão financeira do negócio.</p></div>
+      <div class="mod"><div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15v3M12 10v8M17 6v12"/></svg></div><h3>Relatórios & BI</h3><p>Faturamento, CMV, margem, ranking de produtos e indicadores em tempo real.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="lead-sec" id="lead">
+  <div class="container">
+    <div class="lead-grid">
+      <div class="lead-copy">
+        <h2>Quer levar o RANGO para o seu restaurante?</h2>
+        <p>Deixe seus dados que a nossa equipe entra em contato para te mostrar a plataforma funcionando no seu negócio. Sem compromisso.</p>
+        <div class="wa-chips">
+          <a class="wa-chip" id="wa-1" href="https://wa.me/5511970245651" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.515 5.26l-.999 3.648 3.973-1.042z"/></svg> Falar pelo WhatsApp · (11) 97024-5651</a>
+          <a class="wa-chip" id="wa-2" href="https://wa.me/5511914847096" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.515 5.26l-.999 3.648 3.973-1.042z"/></svg> Outro número · (11) 91484-7096</a>
+        </div>
+      </div>
+
+      <div class="lead-card">
+        <form id="form-lead" class="stack" novalidate>
+          <div class="grid-2">
+            <div class="field"><label>Nome <span class="req">*</span></label><input name="nome" required placeholder="Seu nome"></div>
+            <div class="field"><label>Nome do restaurante <span class="req">*</span></label><input name="restaurante" required placeholder="Nome do estabelecimento"></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label>WhatsApp <span class="req">*</span></label><input name="whatsapp" required placeholder="(11) 99999-9999" inputmode="tel"></div>
+            <div class="field"><label>E-mail <span class="req">*</span></label><input name="email" type="email" required placeholder="voce@email.com"></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label>Cidade <span class="req">*</span></label><input name="cidade" required placeholder="Sua cidade"></div>
+            <div class="field"><label>Qtd. de unidades/restaurantes</label><input name="unidades" placeholder="Ex.: 1, 2, 3+"></div>
+          </div>
+          <div class="field"><label>Mensagem</label><textarea name="mensagem" placeholder="Conte um pouco sobre o seu restaurante (opcional)"></textarea></div>
+          <button class="btn block" type="submit">QUERO CONHECER O RANGO</button>
+          <p class="tiny" style="color:var(--ink-3);margin:10px 0 0;text-align:center">Seus dados são usados apenas para o contato da equipe Rango.</p>
+        </form>
+
+        <div class="lead-ok hide" id="lead-ok">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <h3>Lead enviado com sucesso!</h3>
+          <p>Obrigado pelo interesse no RANGO. Nossa equipe entrará em contato.</p>
+          <a class="btn block" id="lead-wa" href="#" target="_blank" rel="noopener">Falar com o RANGO pelo WhatsApp</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="foot">
+  <div class="container"><b>Rango</b> · Sistema operacional para restaurantes, bares e adegas · uma plataforma VEXXA360.</div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+// já logado? manda pro painel
+api('/api/auth/me').then((me) => { location.href = me.user.role === 'platform' ? '/admin' : '/app'; }).catch(() => {});
+
+document.getElementById('form-login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('button'); btn.disabled = true;
+  const f = new FormData(e.target);
+  try {
+    const r = await api('/api/auth/login', { method: 'POST', body: { email: f.get('email'), password: f.get('password') } });
+    location.href = r.role === 'platform' ? '/admin' : '/app';
+  } catch (err) { toast(err.message, 'err'); btn.disabled = false; }
+});
+
+// Captação de lead
+document.getElementById('form-lead').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const f = new FormData(form);
+  const payload = {
+    nome: (f.get('nome') || '').trim(),
+    restaurante: (f.get('restaurante') || '').trim(),
+    whatsapp: (f.get('whatsapp') || '').trim(),
+    email: (f.get('email') || '').trim(),
+    cidade: (f.get('cidade') || '').trim(),
+    unidades: (f.get('unidades') || '').trim(),
+    mensagem: (f.get('mensagem') || '').trim(),
+  };
+  // Validação dos obrigatórios no cliente
+  const obrig = { nome: 'Nome', restaurante: 'Nome do restaurante', whatsapp: 'WhatsApp', email: 'E-mail', cidade: 'Cidade' };
+  for (const k in obrig) { if (!payload[k]) { toast('Preencha: ' + obrig[k], 'err'); form.querySelector(`[name="${k}"]`).focus(); return; } }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(payload.email)) { toast('E-mail inválido.', 'err'); return; }
+
+  const btn = form.querySelector('button[type="submit"]'); btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const r = await api('/api/public/lead', { method: 'POST', body: payload });
+    const links = (r && r.whatsapp) || [];
+    const wa = document.getElementById('lead-wa');
+    if (links[0]) { wa.href = links[0]; } else { wa.classList.add('hide'); }
+    form.classList.add('hide');
+    document.getElementById('lead-ok').classList.remove('hide');
+  } catch (err) {
+    toast(err.message || 'Não foi possível enviar agora. Tente pelo WhatsApp.', 'err');
+    btn.disabled = false; btn.textContent = 'QUERO CONHECER O RANGO';
+  }
+});
+</script>
+</body>
+</html>

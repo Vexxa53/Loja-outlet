@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reservar mesa</title>
+<link rel="stylesheet" href="/css/styles.css" />
+<style>
+  body { background:var(--bg); color:var(--ink); }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 0 0 40px; background:var(--bg); min-height:100vh; }
+  .cover { height: 120px; background-size: cover; background-position: center; }
+  .head { background:var(--blue-900); padding: 20px 20px 22px; border-bottom:1px solid var(--line); text-align:center; }
+  .brand-logo { width: 72%; max-width: 260px; margin: 2px auto 8px; display:block; }
+  .logo-circle { width:84px;height:84px;border-radius:22px;background:var(--blue-800);margin:0 auto 12px;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:34px;color:var(--brand);overflow:hidden;border:1px solid var(--line); }
+  .logo-circle img { width:100%;height:100%;object-fit:contain; }
+  .rname { font-size:24px; color:#fff; }
+  .meta { color:var(--ink-2); font-size:14px; margin-top:2px; }
+  .meta a { color: var(--ink-2); }
+  .infoline { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-top:10px; font-size:13px; color:var(--ink-2); }
+  .panel { padding: 18px 16px; }
+  .step-head { font-size:13px; font-weight:700; color:var(--brand); text-transform:uppercase; letter-spacing:.05em; }
+  .qty { display:grid; grid-template-columns: repeat(4,1fr); gap:10px; }
+  .qty button, .time-grid button { border:1.5px solid var(--line); background:var(--card); border-radius:12px; padding:14px 0; font-weight:700; font-size:16px; cursor:pointer; color:var(--ink); }
+  .qty button.sel, .time-grid button.sel { border-color:var(--brand); background:var(--brand); color:var(--brand-ink); }
+  .wa-ico { width:18px; height:18px; vertical-align:middle; }
+  .wa-link { display:inline-flex; align-items:center; gap:6px; color:#25D366 !important; font-weight:600; }
+  .qty button.more { grid-column: span 4; font-size:14px; font-weight:600; color:var(--ink-2); }
+  .time-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(78px,1fr)); gap:10px; }
+  .time-grid button:disabled { opacity:.35; cursor:not-allowed; text-decoration: line-through; }
+  .steplabel { font-weight:700; margin: 4px 0 10px; font-size:15px; color:#fff; }
+  .success { text-align:center; padding: 20px 10px; }
+  .success .ok-mark { width:76px;height:76px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center;font-size:40px;margin:0 auto 14px; }
+  .recap { text-align:left; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin:16px 0; }
+  .recap div { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--line); }
+  .recap div:last-child { border-bottom:none; }
+  .recap b { color:#fff; }
+  .powered { text-align:center; color:var(--ink-3); font-size:12px; padding:16px; }
+  .suggest { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  input[type="date"], input[type="time"] { color-scheme: dark; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="app"><div class="spinner"></div></div>
+  <div class="powered">Reservas por <b>Rango</b></div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+const SLUG = location.pathname.split('/').filter(Boolean).pop();
+let R = null;
+const state = { party: 2, date: todayISO(), time: null };
+// Logo oficial do WhatsApp (SVG inline)
+const WA_ICON = '<svg class="wa-ico" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path fill="#25D366" d="M16 0C7.2 0 0 7.2 0 16c0 2.8.7 5.5 2.1 7.9L0 32l8.3-2.2C10.6 31.2 13.2 32 16 32c8.8 0 16-7.2 16-16S24.8 0 16 0z"/><path fill="#fff" d="M24.4 19.3c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.3 1.6-.2.3-.5.3-.9.1-2.3-1.1-3.8-2-5.3-4.6-.4-.7.4-.6 1.1-2 .1-.3.1-.5 0-.7-.1-.2-.9-2.2-1.3-3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1 .5-.4.4-1.3 1.3-1.3 3.2s1.4 3.7 1.6 4c.2.3 2.7 4.3 6.7 6 2.5 1.1 3.5 1.2 4.8 1 .8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>';
+
+async function load() {
+  try {
+    R = await api('/api/public/' + SLUG);
+    document.title = 'Reservar — ' + R.name;
+    if (R.primary_color) document.documentElement.style.setProperty('--brand', R.primary_color);
+    render();
+  } catch (e) {
+    document.getElementById('app').innerHTML = '<div class="empty"><div class="big">🍽️</div>Restaurante não encontrado.</div>';
+  }
+}
+
+function header() {
+  const cover = R.cover_url ? `<div class="cover" style="background-image:url('${esc(R.cover_url)}')"></div>` : '';
+  // Logo largo (imagem) sobre fundo preto; se não houver, círculo com a inicial.
+  const brand = R.logo_url
+    ? `<img class="brand-logo" src="${esc(R.logo_url)}" alt="${esc(R.name)}">`
+    : `<div class="logo-circle">${esc((R.name||'?').charAt(0))}</div>`;
+  const wa = R.whatsapp ? `<a class="wa-link" href="https://wa.me/55${R.whatsapp.replace(/\D/g,'')}">${WA_ICON} WhatsApp</a>` : '';
+  const insta = R.instagram ? `<a href="https://instagram.com/${esc(R.instagram.replace('@',''))}">◎ @${esc(R.instagram.replace('@',''))}</a>` : '';
+  return `
+    ${cover}
+    <div class="head">
+      ${brand}
+      ${(!R.logo_url) ? `<div class="rname">${esc(R.name)}</div>` : ''}
+      ${R.description ? `<div class="meta">${esc(R.description)}</div>` : ''}
+      <div class="infoline">
+        ${R.address ? `<span>📍 ${esc(R.address)}</span>` : ''}
+        ${R.phone ? `<span>☎ ${esc(R.phone)}</span>` : ''}
+      </div>
+      <div class="infoline">${wa} ${insta}</div>
+      ${R.info ? `<div class="meta" style="margin-top:10px;font-size:13px">ℹ️ ${esc(R.info)}</div>` : ''}
+    </div>`;
+}
+
+function render() {
+  const qtyBtns = [1,2,3,4,5,6,7,8].map(n =>
+    `<button class="${state.party===n?'sel':''}" onclick="setParty(${n})">${n}</button>`).join('');
+  document.getElementById('app').innerHTML = header() + `
+    <div class="panel stack">
+      <div class="card stack">
+        <div class="step-head">Passo 1 · Quantas pessoas?</div>
+        <div class="qty">${qtyBtns}
+          <input id="party-more" class="more" type="number" min="1" placeholder="Mais de 8? digite aqui" onchange="setParty(+this.value)"
+                 style="grid-column:span 4;text-align:center" value="${state.party>8?state.party:''}">
+        </div>
+      </div>
+
+      <div class="card stack">
+        <div class="step-head">Passo 2 · Qual data?</div>
+        <input type="date" id="date" min="${todayISO()}" value="${state.date}" onchange="setDate(this.value)">
+      </div>
+
+      <div class="card stack">
+        <div class="step-head">Passo 3 · Qual horário?</div>
+        <div id="slots"><div class="spinner"></div></div>
+      </div>
+    </div>`;
+  loadSlots();
+}
+
+function setParty(n) { if (!(n>0)) return; state.party = n; state.time = null; render(); }
+function setDate(v) { state.date = v; state.time = null; render(); }
+
+async function loadSlots() {
+  const box = document.getElementById('slots');
+  try {
+    const r = await api(`/api/public/${SLUG}/slots?date=${state.date}&party=${state.party}`);
+    if (!r.open) {
+      const reason = r.reason === 'data_bloqueada' ? 'O restaurante não atende nesta data.' : 'Fechado neste dia.';
+      box.innerHTML = `<p class="muted">${reason} Escolha outra data.</p>`; return;
+    }
+    if (!r.slots.length) { box.innerHTML = '<p class="muted">Sem horários para esta data.</p>'; return; }
+    box.innerHTML = '<div class="time-grid">' + r.slots.map(s =>
+      `<button ${s.available?'':'disabled'} class="${state.time===s.time?'sel':''}" onclick="pickTime('${s.time}')">${s.time}</button>`
+    ).join('') + '</div>' +
+    (state.time ? contactForm() : '<p class="tiny" style="margin-top:10px">Selecione um horário para continuar.</p>');
+  } catch (e) { box.innerHTML = '<p class="muted">Não foi possível carregar os horários.</p>'; }
+}
+
+function pickTime(t) {
+  state.time = t;
+  document.querySelectorAll('#slots .time-grid button').forEach(b => b.classList.toggle('sel', b.textContent === t));
+  let f = document.getElementById('contact');
+  if (!f) { document.getElementById('slots').insertAdjacentHTML('beforeend', contactForm()); }
+  document.getElementById('contact').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+function contactForm() {
+  return `
+    <form id="contact" class="stack" style="margin-top:16px;border-top:1px solid var(--line);padding-top:16px" onsubmit="return submitReserve(event)">
+      <div class="steplabel">Passo 4 · Onde você deseja ficar?</div>
+      ${(R.areas && R.areas.length) ? `<div class="field"><label>Ambiente (obrigatório)</label>
+        <select name="area_pref" required>
+          <option value="" disabled selected>Selecione o ambiente…</option>
+          ${R.areas.map(a => `<option value="${esc(a.kind)}">${a.kind === 'rooftop' ? '🌇 ' : '🍽 '}${esc(a.name)}</option>`).join('')}
+        </select></div>` : '<input type="hidden" name="area_pref" value="indiferente">'}
+      <div class="steplabel">Seus dados</div>
+      <div class="field"><label>Nome completo</label><input name="name" required placeholder="Seu nome"></div>
+      <div class="field"><label>WhatsApp</label><input name="phone" required placeholder="(11) 90000-0000" inputmode="tel"></div>
+      <div class="field"><label>Observações (opcional)</label><textarea name="note" placeholder="Aniversário, cadeirinha, restrição alimentar..."></textarea></div>
+      <button class="btn block" type="submit">Reservar minha mesa · ${state.party} pessoa(s) às ${state.time}</button>
+    </form>`;
+}
+
+async function submitReserve(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = 'Reservando...';
+  const f = new FormData(e.target);
+  try {
+    const r = await api(`/api/public/${SLUG}/reserve`, { method:'POST', body: {
+      customer_name: f.get('name'), customer_phone: f.get('phone'), note: f.get('note'),
+      party_size: state.party, date: state.date, time: state.time, area_pref: f.get('area_pref') || 'indiferente',
+    }});
+    showSuccess(r);
+  } catch (err) {
+    btn.disabled = false; btn.textContent = 'Tentar novamente';
+    let html = `<p class="muted">${esc(err.message)}</p>`;
+    if (err.data && err.data.suggestions && err.data.suggestions.length) {
+      html += '<div class="suggest">' + err.data.suggestions.map(t =>
+        `<button type="button" class="chip" onclick="pickTime('${t}');document.getElementById('sugbox').remove()">${t}</button>`).join('') + '</div>';
+    }
+    let box = document.getElementById('sugbox');
+    if (box) box.remove();
+    e.target.insertAdjacentHTML('beforebegin', `<div id="sugbox" class="card" style="border-color:var(--warn);background:var(--warn-soft);margin-bottom:12px"><b>Ops!</b> ${html}</div>`);
+  }
+}
+
+function showSuccess(r) {
+  const rv = r.reservation;
+  const cal = googleCalLink(rv);
+  const waBtn = r.whatsappText && R.whatsapp
+    ? `<a class="btn block" style="background:#25D366;color:#fff" target="_blank" href="https://wa.me/55${R.whatsapp.replace(/\D/g,'')}?text=${encodeURIComponent('Olá! Acabei de reservar pelo site. '+rv.customer_name)}">${WA_ICON} Confirmar pelo WhatsApp</a>` : '';
+  document.getElementById('app').innerHTML = header() + `
+    <div class="panel"><div class="card success">
+      <div class="ok-mark">✓</div>
+      <h2>Reserva confirmada!</h2>
+      <p class="muted">Enviamos os detalhes abaixo. Guarde o link para alterar ou cancelar.</p>
+      <div class="recap">
+        <div><span>Cliente</span><b>${esc(rv.customer_name)}</b></div>
+        <div><span>Data</span><b>${fmtDate(rv.date)}</b></div>
+        <div><span>Horário</span><b>${rv.time}</b></div>
+        <div><span>Pessoas</span><b>${rv.party_size}</b></div>
+        <div><span>Ambiente</span><b>${areaLabel(rv.area_pref) || esc(rv.tableName)}</b></div>
+      </div>
+      <div class="stack">
+        <a class="btn block" target="_blank" href="${cal}">📅 Adicionar ao calendário</a>
+        ${waBtn}
+        <a class="btn block ghost" href="/reserva/${rv.cancel_token}">Alterar ou cancelar reserva</a>
+      </div>
+    </div></div>`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function googleCalLink(rv) {
+  const [y,m,d] = rv.date.split('-'); const [hh,mm] = rv.time.split(':');
+  const start = `${y}${m}${d}T${hh}${mm}00`;
+  const endD = new Date(`${rv.date}T${rv.time}:00`); endD.setMinutes(endD.getMinutes()+90);
+  const end = `${endD.getFullYear()}${String(endD.getMonth()+1).padStart(2,'0')}${String(endD.getDate()).padStart(2,'0')}T${String(endD.getHours()).padStart(2,'0')}${String(endD.getMinutes()).padStart(2,'0')}00`;
+  const text = encodeURIComponent(`Reserva ${R.name}`);
+  const details = encodeURIComponent(`Reserva para ${rv.party_size} pessoa(s) · ${rv.tableName}`);
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${start}/${end}&details=${details}&location=${encodeURIComponent(R.address||'')}`;
+}
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rango</title>
+<link rel="stylesheet" href="/css/styles.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand" style="padding:6px 8px 16px"><span class="sb-logo" role="img" aria-label="Rango" style="height:38px"></span><span class="collapsed-mark">R</span></div>
+    <nav id="nav" class="nav-scroll"></nav>
+    <div class="sidebar-foot">
+      <div class="sep"></div>
+      <div id="who" class="small" style="padding:4px 12px;color:#8892a4"></div>
+      <a class="nav-item" data-tip="Sair" onclick="logout()"><span class="ic">⏻</span> <span class="nav-label">Sair</span></a>
+    </div>
+  </aside>
+  <div class="scrim hide" id="scrim" onclick="toggleMenu(false)"></div>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="btn ghost sm hamburger" onclick="toggleMenu(true)">☰</button>
+      <button class="btn ghost sm nav-collapse hide-mobile" onclick="toggleCollapse()" title="Recolher / expandir menu" aria-label="Recolher menu">⮜</button>
+      <h1 id="page-title">Dashboard</h1>
+      <div class="grow"></div>
+      <span id="unit-selector"></span>
+      <button class="btn ghost sm" id="notif-bell" onclick="go('notificacoes')" style="position:relative">
+        🔔 <span id="notif-badge" class="nav-badge hide" style="position:absolute;top:-4px;right:-4px">0</span>
+      </button>
+      <a class="btn sm" id="public-link" target="_blank"><span class="hide-mobile">Ver página pública </span><span class="only-mobile">Página </span>↗</a>
+    </div>
+    <div class="content" id="content"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>

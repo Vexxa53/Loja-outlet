@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Painel Master Rango</title>
+<link rel="stylesheet" href="/css/styles.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* Painel Master da VEXXA360 — fundo branco, acento azul (identidade Rango), texto azul-marinho. */
+:root[data-theme="light"]{
+  --bg:#f2f6fb; --card:#ffffff; --card-2:#f3f7fc;
+  --brand:#2987D6; --brand-dark:#1f6fb0; --brand-soft:#e3f0fc; --brand-ink:#ffffff;
+  --ink:#021324; --ink-2:#3a4a5c; --ink-3:#64748b; --line:#dce6f1;
+  color-scheme:light;
+}
+body{background:var(--bg);color:var(--ink)}
+/* Fundo claro → logo escura (#021324), conforme regra de contraste da marca. */
+.master-logo{display:inline-block;height:30px;width:auto;aspect-ratio:700/449;flex:0 0 auto;
+  background:#021324;-webkit-mask:url(/rango-logo.png) no-repeat left center/contain;mask:url(/rango-logo.png) no-repeat left center/contain}
+/* layout master */
+.msh{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+.msb{background:#fff;border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
+.msb::-webkit-scrollbar{width:0;height:0;display:none}
+.msb .brand{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:6px 8px 14px}
+.msb .brand small{color:var(--ink-3);font-weight:700;letter-spacing:.06em;font-size:10px}
+.mnav{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:#3f4651;font-weight:600;font-size:14.5px;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.mnav:hover{background:#eef4fb;color:#021324}
+.mnav.active{background:var(--brand);color:#fff}
+.mnav svg{width:19px;height:19px;color:var(--brand)}
+.mnav.active svg{color:#fff}
+.mmain{padding:0}
+.mtop{display:flex;align-items:center;gap:12px;padding:16px clamp(16px,3vw,26px);border-bottom:1px solid var(--line)}
+.mtop h1{font-size:20px;margin:0}
+.mcontent{padding:clamp(16px,3vw,26px)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.toolbar input,.toolbar select{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:9px 12px;font-size:14px}
+.toolbar input.search{flex:1;min-width:200px}
+@media(max-width:760px){ .msh{grid-template-columns:1fr} .msb{flex-direction:row;overflow-x:auto;border-right:none;border-bottom:1px solid var(--line)} .msb .brand{display:none} .mnav{white-space:nowrap} }
+/* Menu retrátil do Master */
+.msh{ transition: grid-template-columns .25s ease; }
+@media(min-width:761px){
+  .msh.nav-collapsed{ grid-template-columns:72px 1fr; }
+  .msh.nav-collapsed .mnav-label{ display:none; }
+  .msh.nav-collapsed .mnav{ justify-content:center; gap:0; }
+  .msh.nav-collapsed .msb .brand small{ display:none; }
+  .msh.nav-collapsed .msb .brand{ align-items:center; }
+  .msh.nav-collapsed .mnav{ position:relative; }
+  .msh.nav-collapsed .mnav:hover::after{ content:attr(data-tip); position:absolute; left:calc(100% + 8px); top:50%; transform:translateY(-50%); background:#021324; color:#fff; padding:6px 10px; border-radius:8px; font-size:12.5px; font-weight:600; white-space:nowrap; z-index:60; box-shadow:0 6px 20px rgba(2,10,22,.4); }
+}
+</style>
+</head>
+<body>
+<div id="root"><div class="spinner" style="margin-top:80px"></div></div>
+
+<script src="/js/common.js"></script>
+<script>
+const ICON = {
+  dashboard:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  clientes:'<path d="M3 21V7l6-4 6 4v14"/><path d="M15 21V11l6 4v6"/><path d="M6 9h0M6 13h0M6 17h0M11 9h0M11 13h0"/>',
+  auditoria:'<path d="M9 3h6a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2V4a1 1 0 0 1 1-1z"/><path d="M9 11h6M9 15h4"/>',
+};
+function svg(k){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]||''}</svg>`; }
+
+let PLANS = {}, CLIENTS = [], METRICS = {}, VIEW = 'dashboard';
+let FILTER = { q:'', status:'', plan:'', wl:'', city:'' };
+
+async function boot() {
+  let me = null;
+  try { me = await api('/api/auth/me'); } catch {}
+  if (me && me.user.role !== 'platform') { location.href = '/app'; return; }
+  if (!me) return loginScreen();
+  shell();
+}
+function loginScreen() {
+  document.getElementById('root').innerHTML = `
+    <div class="container narrow" style="padding-top:64px">
+      <div style="text-align:center;margin-bottom:18px"><span class="master-logo" style="height:40px" role="img" aria-label="Rango"></span></div>
+      <div class="card">
+        <h2 style="text-align:center">Painel Master <span style="color:var(--brand)">Rango</span></h2>
+        <p class="muted small" style="text-align:center">Acesso restrito à plataforma — VEXXA360.</p>
+        <form class="stack" onsubmit="return doLogin(event)">
+          <div class="field"><label>Usuário</label><input type="text" name="email" required autocomplete="username"></div>
+          <div class="field"><label>Senha</label><input type="password" name="password" required></div>
+          <button class="btn block">Entrar</button>
+        </form>
+      </div>
+    </div>`;
+}
+async function doLogin(e) {
+  e.preventDefault(); const f = new FormData(e.target);
+  try {
+    const r = await api('/api/auth/login', { method: 'POST', body: { email: f.get('email'), password: f.get('password') } });
+    if (r.role !== 'platform') { location.href = '/app'; return; }
+    boot();
+  } catch (err) { toast(err.message, 'err'); }
+}
+
+function shell() {
+  const items = [['dashboard','Dashboard RANGO'],['clientes','Gerenciar Parceiros'],['planos','Planos & Receita'],['auditoria','Auditoria']];
+  document.getElementById('root').innerHTML = `
+    <div class="msh">
+      <aside class="msb">
+        <div class="brand"><span class="master-logo" role="img" aria-label="Rango"></span><small>PAINEL MASTER · VEXXA360</small></div>
+        ${items.map(([id,l])=>`<button class="mnav" id="mnav-${id}" data-tip="${l}" onclick="go('${id}')">${svg(id)} <span class="mnav-label">${l}</span></button>`).join('')}
+        <div style="flex:1"></div>
+        <button class="mnav" data-tip="Sair" onclick="logout()">${svg('auditoria')} <span class="mnav-label">Sair</span></button>
+      </aside>
+      <main class="mmain">
+        <div class="mtop"><button class="btn ghost sm" onclick="toggleMasterCollapse()" title="Recolher / expandir menu" style="font-size:16px">⮜</button><h1 id="m-title">Dashboard RANGO</h1><div class="grow"></div>
+          <button class="btn ghost sm" onclick="openSelector()">🏬 Selecionar restaurante ▾</button>
+          <span class="tiny" style="color:var(--ink-3)">VEXXA360</span></div>
+        <div class="mcontent" id="m-content"><div class="spinner"></div></div>
+      </main>
+    </div>`;
+  applyMasterCollapsed();
+  go(VIEW);
+}
+async function go(v) {
+  VIEW = v;
+  document.querySelectorAll('.mnav').forEach(n=>n.classList.toggle('active', n.id===`mnav-${v}`));
+  document.getElementById('m-title').textContent = ({dashboard:'Dashboard RANGO',clientes:'Gerenciar Parceiros',planos:'Planos & Receita',auditoria:'Auditoria'})[v]||v;
+  if (v==='dashboard') renderDash();
+  else if (v==='clientes') renderClientes();
+  else if (v==='planos') renderPlanos();
+  else if (v==='auditoria') renderAuditoria();
+}
+const money = (c)=> 'R$ '+((c||0)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+let CHARTS = [];
+function clearCharts(){ CHARTS.forEach(c=>{try{c.destroy()}catch{}}); CHARTS=[]; }
+async function loadData() {
+  const [m, d] = await Promise.all([api('/api/platform/metrics'), api('/api/platform/tenants')]);
+  METRICS = m; PLANS = d.plans || {}; CLIENTS = d.tenants || [];
+}
+
+/* --------------------------- DASHBOARD RANGO (global) --------------------------- */
+let DASH_DAYS = 30;
+const DASH_PERIODS = [[1,'Hoje'],[7,'7 dias'],[30,'30 dias'],[90,'90 dias'],[365,'Ano']];
+let RANK_BY = 'faturamento';
+function dashPeriod(d){ DASH_DAYS=d; renderDash(); }
+async function renderDash() {
+  clearCharts();
+  const el = document.getElementById('m-content');
+  let o, rank, grow;
+  try { [o, rank, grow] = await Promise.all([ api('/api/platform/overview?days='+DASH_DAYS), api('/api/platform/ranking?by='+RANK_BY+'&days='+DASH_DAYS), api('/api/platform/growth') ]); }
+  catch(e){ el.innerHTML = `<div class="empty">${e.message}</div>`; return; }
+  const r=o.receita_rango;
+  el.innerHTML = `
+    <div class="chips" style="margin-bottom:16px">${DASH_PERIODS.map(([v,l])=>`<button class="chip ${DASH_DAYS===v?'active':''}" onclick="dashPeriod(${v})">${l}</button>`).join('')}</div>
+    <div class="stats" style="margin-bottom:14px">
+      <div class="stat accent"><div class="label">Restaurantes</div><div class="value">${o.restaurantes.total}</div><div class="sub">${o.restaurantes.ativos} ativos · ${o.restaurantes.inativos} inativos</div></div>
+      <div class="stat"><div class="label">Novos no período</div><div class="value">${o.clientes_tenants.novos}</div></div>
+      <div class="stat"><div class="label">Usuários</div><div class="value">${o.usuarios}</div></div>
+      <div class="stat"><div class="label">Funcionários</div><div class="value">${o.funcionarios}</div></div>
+    </div>
+    <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div class="card" style="border-left:4px solid var(--ink-3)">
+        <div class="tiny" style="text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);font-weight:800">Vendas dos restaurantes</div>
+        <div style="font-family:var(--display);font-size:30px;font-weight:800">${money(o.vendas_restaurantes_cents)}</div>
+        <div class="tiny">${o.operacao.pedidos} pedidos · ticket médio ${money(o.operacao.ticket_medio_cents)}</div>
+        <div class="tiny" style="color:var(--ink-3)">valor processado pelos restaurantes (não é receita do Rango)</div>
+      </div>
+      <div class="card" style="border-left:4px solid var(--brand)">
+        <div class="tiny" style="text-transform:uppercase;letter-spacing:.04em;color:var(--brand);font-weight:800">Receita do RANGO (MRR)</div>
+        <div style="font-family:var(--display);font-size:30px;font-weight:800;color:var(--brand)">${money(r.mrr_cents)}</div>
+        <div class="tiny">ARR ${money(r.arr_cents)} · ${r.assinantes} assinantes</div>
+        <div class="tiny" style="color:var(--ink-3)">assinaturas dos planos (receita da plataforma)</div>
+      </div>
+    </div>
+    <div class="stats" style="margin-bottom:18px">
+      <div class="stat"><div class="label">Pedidos</div><div class="value">${o.operacao.pedidos}</div></div>
+      <div class="stat"><div class="label">Reservas</div><div class="value">${o.operacao.reservas}</div></div>
+      <div class="stat"><div class="label">Clientes cadastrados</div><div class="value">${o.operacao.clientes}</div></div>
+      <div class="stat"><div class="label">Cancelamentos</div><div class="value">${o.operacao.cancelamentos}</div></div>
+    </div>
+    <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+      <div class="card"><h3 style="margin-top:0">Restaurantes por plano</h3><div style="height:220px"><canvas id="ch-plano"></canvas></div></div>
+      <div class="card"><h3 style="margin-top:0">Crescimento de restaurantes</h3><div style="height:220px"><canvas id="ch-grow"></canvas></div></div>
+    </div>
+    <div class="section-title"><h2>Ranking de restaurantes</h2>
+      <select onchange="RANK_BY=this.value;renderDash()" style="border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-weight:700">
+        <option value="faturamento" ${RANK_BY==='faturamento'?'selected':''}>Maior faturamento</option>
+        <option value="pedidos" ${RANK_BY==='pedidos'?'selected':''}>Mais pedidos</option>
+        <option value="reservas" ${RANK_BY==='reservas'?'selected':''}>Mais reservas</option>
+        <option value="clientes" ${RANK_BY==='clientes'?'selected':''}>Mais clientes</option>
+      </select></div>
+    <div class="card tight"><table class="tbl"><thead><tr><th>#</th><th>Restaurante</th><th style="text-align:right">${RANK_BY==='faturamento'?'Faturamento':RANK_BY}</th></tr></thead>
+      <tbody>${(rank.ranking||[]).map((x,i)=>`<tr><td><b>${i+1}º</b></td><td>${esc(x.name)}</td><td style="text-align:right"><b>${x.is_money?money(x.value):x.value}</b></td></tr>`).join('')||'<tr><td colspan="3" class="muted">Sem dados no período.</td></tr>'}</tbody></table></div>`;
+  // gráficos
+  try {
+    const pal=['#E0352B','#3574d4','#1f9d6b','#b8860b','#7a5bd4','#d44f9e'];
+    const dp=o.distribuicao_planos.filter(x=>x.count>0);
+    CHARTS.push(new Chart(document.getElementById('ch-plano'),{type:'doughnut',data:{labels:dp.map(x=>x.name),datasets:[{data:dp.map(x=>x.count),backgroundColor:dp.map((_,i)=>pal[i%pal.length])}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'}}}}));
+    CHARTS.push(new Chart(document.getElementById('ch-grow'),{type:'line',data:{labels:grow.labels,datasets:[{data:grow.values,borderColor:'#E0352B',backgroundColor:'rgba(224,53,43,.12)',fill:true,tension:.35,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}}));
+  } catch {}
+}
+
+/* ---- Seletor global de restaurante (acesso rápido ao ambiente) ---- */
+function openSelector() {
+  if (!CLIENTS.length) { loadData().then(openSelector); return; }
+  openModal(`<h3>Selecionar restaurante</h3>
+    <input id="sel-q" class="search" placeholder="Pesquisar por nome, CNPJ ou cidade..." oninput="renderSelectorList()" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px">
+    <div id="sel-list" style="max-height:60vh;overflow:auto"></div>`);
+  renderSelectorList();
+}
+function renderSelectorList() {
+  const q=(document.getElementById('sel-q')?.value||'').toLowerCase();
+  const list=CLIENTS.filter(t=>{ if(!q) return true; return `${t.name} ${t.cnpj||''} ${t.cidade||''}`.toLowerCase().includes(q); });
+  document.getElementById('sel-list').innerHTML = list.map(t=>`
+    <div class="row between center" style="padding:10px;border:1px solid var(--line);border-radius:10px;margin-bottom:7px">
+      <div><b>${esc(t.name)}</b><div class="tiny">${esc([t.cidade,t.estado].filter(Boolean).join('/')||'—')} · ${esc(t.plan_label||t.plan)} · ${t.status?'Ativo':'Inativo'}</div></div>
+      <button class="btn sm" onclick="accessEnv(${t.main_unit&&t.main_unit.id?t.main_unit.id:0},'${esc((t.name||'').replace(/'/g,''))}')">Acessar</button>
+    </div>`).join('')||'<div class="muted" style="padding:10px">Nenhum restaurante.</div>';
+}
+
+/* ------------------------------ PLANOS & RECEITA ------------------------------ */
+async function renderPlanos() {
+  const el=document.getElementById('m-content');
+  let d,o;
+  try { [d,o]=await Promise.all([api('/api/platform/plans'),api('/api/platform/overview?days=30')]); }
+  catch(e){ el.innerHTML=`<div class="empty">${e.message}</div>`; return; }
+  PLANS = Object.fromEntries(d.plans.map(p=>[p.key,{label:p.name,max_units:p.max_units,max_users:p.max_users,white_label:p.white_label}]));
+  const r=o.receita_rango;
+  el.innerHTML=`
+    <div class="stats" style="margin-bottom:18px">
+      <div class="stat accent"><div class="label">Receita recorrente (MRR)</div><div class="value">${money(r.mrr_cents)}</div><div class="sub">ARR ${money(r.arr_cents)}</div></div>
+      <div class="stat"><div class="label">Assinantes ativos</div><div class="value">${r.assinantes}</div></div>
+      <div class="stat"><div class="label">Planos</div><div class="value">${d.plans.length}</div></div>
+    </div>
+    <div class="section-title"><h2>Planos</h2></div>
+    <div class="card tight" style="margin-bottom:18px"><div style="overflow-x:auto"><table class="tbl">
+      <thead><tr><th>Plano</th><th>Preço/mês</th><th>Assinantes</th><th>Receita</th><th>Limites</th><th>Status</th><th></th></tr></thead>
+      <tbody>${d.plans.map(p=>`<tr>
+        <td><b>${esc(p.name)}</b><div class="tiny">${p.key}</div></td>
+        <td>${money(p.price_cents)}</td><td>${p.assinantes}</td><td>${money(p.price_cents*p.assinantes)}</td>
+        <td class="tiny">${p.max_units} unid. · ${p.max_users} usuários${p.white_label?' · WL':''}</td>
+        <td>${p.active?'<span class="badge ok">Ativo</span>':'<span class="badge mut">Inativo</span>'}</td>
+        <td class="right"><button class="btn sm" onclick="editPlan('${p.key}','${esc(p.name)}',${p.price_cents},${p.active})">Editar</button></td>
+      </tr>`).join('')}</tbody></table></div></div>
+    <div class="section-title"><h2>Receita por plano</h2></div>
+    <div class="card tight"><table class="tbl"><thead><tr><th>Plano</th><th>Assinantes</th><th>Preço</th><th style="text-align:right">Total/mês</th></tr></thead>
+      <tbody>${r.por_plano.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.assinantes}</td><td>${money(p.price_cents)}</td><td style="text-align:right"><b>${money(p.total_cents)}</b></td></tr>`).join('')||'<tr><td colspan="4" class="muted">Sem assinantes.</td></tr>'}</tbody></table></div>
+    <div class="section-title" style="margin-top:18px"><h2>Matriz de recursos</h2></div>
+    <div class="card tight"><div style="overflow-x:auto"><table class="tbl">
+      <thead><tr><th>Recurso</th>${d.plans.map(p=>`<th style="text-align:center">${esc(p.name)}</th>`).join('')}</tr></thead>
+      <tbody>${d.modules.map(mod=>`<tr><td>${esc(d.labels[mod]||mod)}</td>${d.plans.map(p=>`<td style="text-align:center">${p.features.includes(mod)?'<span style="color:var(--ok)">✓</span>':'<span style="color:var(--ink-3)">—</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>
+    <p class="tiny" style="color:var(--ink-3);margin-top:10px">A matriz vem da configuração de cada plano. Ajustes finos de recursos por cliente ficam em Gerenciar Parceiros → Recursos.</p>`;
+}
+function editPlan(key,name,price,active){
+  openModal(`<h3>Editar plano</h3>
+    <div class="field"><label>Nome</label><input id="pl-name" value="${esc(name)}"></div>
+    <div class="field"><label>Preço mensal (R$)</label><input id="pl-price" type="number" step="0.01" min="0" value="${(price/100).toFixed(2)}"></div>
+    <label class="opt-row" style="justify-content:space-between"><span>Plano ativo</span><input type="checkbox" id="pl-active" ${active?'checked':''} style="width:auto"></label>
+    <button class="btn block" style="margin-top:10px" onclick="savePlan2('${key}')">Salvar</button>`);
+}
+async function savePlan2(key){
+  const body={ name:document.getElementById('pl-name').value, price_cents:Math.round(Number(document.getElementById('pl-price').value)*100), active:document.getElementById('pl-active').checked?1:0 };
+  try{ await api('/api/platform/plans/'+key,{method:'PUT',body}); toast('Plano salvo.','ok'); closeModal(); renderPlanos(); }catch(e){ toast(e.message,'err'); }
+}
+
+/* ------------------------------ CLIENTES ------------------------------ */
+async function renderClientes() {
+  await loadData();
+  renderClientesBody();
+}
+function clientesFiltered() {
+  const q = FILTER.q.toLowerCase().trim();
+  return CLIENTS.filter(t => {
+    if (FILTER.status==='1' && !t.status) return false;
+    if (FILTER.status==='0' && t.status) return false;
+    if (FILTER.plan && t.plan!==FILTER.plan) return false;
+    if (FILTER.city && (t.cidade||'')!==FILTER.city) return false;
+    if (FILTER.wl==='1' && !t.white_label) return false;
+    if (FILTER.wl==='0' && t.white_label) return false;
+    if (q) { const hay = `${t.name} ${t.nome_fantasia||''} ${t.razao_social||''} ${t.cnpj||''} ${t.responsavel||''} ${t.email||''}`.toLowerCase(); if (!hay.includes(q)) return false; }
+    return true;
+  });
+}
+function renderClientesBody() {
+  const el = document.getElementById('m-content');
+  const m = METRICS;
+  const ativos = CLIENTS.filter(t=>t.status).length;
+  const cities = [...new Set(CLIENTS.map(t=>t.cidade).filter(Boolean))].sort();
+  const rows = clientesFiltered();
+  el.innerHTML = `
+    <p class="muted" style="margin:-4px 0 14px">Gerencie os restaurantes que utilizam a plataforma Rango.</p>
+    <div class="stats" style="margin-bottom:16px">
+      <div class="stat accent"><div class="label">Total de clientes</div><div class="value">${CLIENTS.length}</div></div>
+      <div class="stat"><div class="label">Ativos</div><div class="value">${ativos}</div></div>
+      <div class="stat"><div class="label">Inativos</div><div class="value">${CLIENTS.length-ativos}</div></div>
+      <div class="stat"><div class="label">Unidades</div><div class="value">${m.restaurants||0}</div></div>
+      <div class="stat"><div class="label">Funcionários</div><div class="value">${m.employees||0}</div></div>
+    </div>
+    <div class="toolbar">
+      <input class="search" id="f-q" placeholder="Pesquisar por nome, CNPJ, responsável, e-mail..." value="${esc(FILTER.q)}" oninput="FILTER.q=this.value;renderClientesBody();document.getElementById('f-q').focus()">
+      <select onchange="FILTER.status=this.value;renderClientesBody()"><option value="">Todos os status</option><option value="1" ${FILTER.status==='1'?'selected':''}>Ativos</option><option value="0" ${FILTER.status==='0'?'selected':''}>Inativos</option></select>
+      <select onchange="FILTER.plan=this.value;renderClientesBody()"><option value="">Todos os planos</option>${Object.entries(PLANS).map(([k,v])=>`<option value="${k}" ${FILTER.plan===k?'selected':''}>${esc(v.label)}</option>`).join('')}</select>
+      <select onchange="FILTER.city=this.value;renderClientesBody()"><option value="">Todas as cidades</option>${cities.map(c=>`<option value="${esc(c)}" ${FILTER.city===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
+      <select onchange="FILTER.wl=this.value;renderClientesBody()"><option value="">White Label (todos)</option><option value="1" ${FILTER.wl==='1'?'selected':''}>Ativo</option><option value="0" ${FILTER.wl==='0'?'selected':''}>Inativo</option></select>
+      <div class="grow"></div>
+      <button class="btn" onclick="newClientModal()">+ Criar restaurante</button>
+    </div>
+    <div class="card tight"><div style="overflow-x:auto"><table class="tbl">
+      <thead><tr><th>Restaurante</th><th>Administrador</th><th>CNPJ</th><th>Cidade/UF</th><th>Plano</th><th>Unid.</th><th>Func.</th><th>Status</th><th>Cadastro</th><th>Ações</th></tr></thead>
+      <tbody>${rows.map(t=>`<tr>
+        <td class="cust">${esc(t.name)}${t.white_label?' <span class="badge ok" style="font-size:9px">WL</span>':''}${t.nome_fantasia&&t.nome_fantasia!==t.name?`<div class="tiny">${esc(t.nome_fantasia)}</div>`:''}</td>
+        <td class="small">${esc((t.admin&&t.admin.name)||t.responsavel||'—')}${t.admin&&t.admin.email?`<div class="tiny">${esc(t.admin.email)}</div>`:''}</td>
+        <td class="tiny">${esc(t.cnpj||'—')}</td>
+        <td class="tiny">${esc([t.cidade,t.estado].filter(Boolean).join('/')||'—')}</td>
+        <td>${esc(t.plan_label||t.plan)}</td>
+        <td>${t.units}</td><td>${t.employees}</td>
+        <td>${t.status?'<span class="badge ok">Ativo</span>':'<span class="badge danger">Bloqueado</span>'}</td>
+        <td class="tiny">${esc((t.created_at||'').slice(0,10))}</td>
+        <td class="right" style="white-space:nowrap"><button class="btn ghost sm" title="Acessar ambiente" onclick="accessEnv(${t.main_unit&&t.main_unit.id?t.main_unit.id:0},'${esc((t.name||'').replace(/'/g,''))}')">Acessar</button> <button class="btn sm" onclick="manageTenant(${t.id})">Gerenciar</button></td>
+      </tr>`).join('')||`<tr><td colspan="10" class="muted">Nenhum restaurante ${FILTER.q||FILTER.status||FILTER.plan||FILTER.city?'para o filtro':'cadastrado'}.</td></tr>`}</tbody></table></div></div>
+    <p class="tiny" style="color:var(--ink-3);margin-top:10px">${rows.length} de ${CLIENTS.length} parceiro(s). Cada restaurante é um Tenant isolado. "Acessar" entra no ambiente do parceiro (Modo Master) para suporte/administração.</p>`;
+}
+
+/* ---- Novo Restaurante / Cliente (cadastro completo) ---- */
+function newClientModal() {
+  const planOpts = Object.entries(PLANS).map(([k,v])=>`<option value="${k}" ${k==='profissional'?'selected':''}>${esc(v.label)}</option>`).join('');
+  openModal(`<h3>Novo Restaurante / Cliente</h3>
+    <form class="stack" onsubmit="return createClient(event)">
+      <div class="tiny" style="font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3)">Tipo de estabelecimento *</div>
+      <div class="field"><select name="tipo" id="nc-tipo" onchange="document.getElementById('nc-tipo-hint').textContent = this.value==='adega_bar' ? 'Ativa o Módulo Adega/Bar: Venda Rápida, doses, drinks, estoque em ML, CMV, caixa e perdas/consumo.' : 'Mantém os módulos de restaurante (salão, reservas, comandas, cardápio).'">
+        <option value="restaurante" selected>Restaurante</option>
+        <option value="adega_bar">Adega / Bar</option>
+      </select><div class="tiny" id="nc-tipo-hint" style="color:var(--ink-3);margin-top:4px">Mantém os módulos de restaurante (salão, reservas, comandas, cardápio).</div></div>
+      <div class="tiny" style="font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3)">Dados do restaurante</div>
+      <div class="field"><label>Nome do estabelecimento *</label><input name="name" required></div>
+      <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field"><label>Nome fantasia</label><input name="nome_fantasia"></div>
+        <div class="field"><label>Razão social</label><input name="razao_social"></div>
+        <div class="field"><label>CNPJ</label><input name="cnpj" placeholder="00.000.000/0001-00"></div>
+        <div class="field"><label>Inscrição estadual</label><input name="inscricao_estadual"></div>
+        <div class="field"><label>Telefone</label><input name="phone"></div>
+        <div class="field"><label>WhatsApp</label><input name="whatsapp"></div>
+        <div class="field"><label>E-mail</label><input name="email" type="email"></div>
+      </div>
+      <div class="field"><label>Endereço</label><input name="address" placeholder="Rua, nº, complemento, bairro"></div>
+      <div class="grid2" style="display:grid;grid-template-columns:2fr 1fr;gap:10px">
+        <div class="field"><label>Cidade</label><input name="cidade"></div>
+        <div class="field"><label>Estado (UF)</label><input name="estado" maxlength="2" placeholder="SP"></div>
+      </div>
+      <div class="tiny" style="font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);margin-top:6px">Responsável / Administrador</div>
+      <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field"><label>Nome do responsável *</label><input name="admin_name" required></div>
+        <div class="field"><label>E-mail de acesso *</label><input name="admin_email" type="email" required></div>
+      </div>
+      <div class="field"><label>Senha inicial *</label><input name="admin_password" type="password" minlength="6" required></div>
+      <div class="tiny" style="font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);margin-top:6px">Configuração comercial</div>
+      <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field"><label>Plano *</label><select name="plan">${planOpts}</select></div>
+        <div class="field"><label>Status</label><select name="status"><option value="1" selected>Ativo</option><option value="0">Inativo</option></select></div>
+        <div class="field"><label>Limite de funcionários</label><input name="max_users" type="number" min="1" placeholder="(do plano)"></div>
+        <div class="field"><label>Limite de unidades</label><input name="max_units" type="number" min="1" placeholder="(do plano)"></div>
+      </div>
+      <label class="opt-row" style="justify-content:space-between"><span>Ativar White Label (identidade própria)</span><input type="checkbox" name="white_label" style="width:auto"></label>
+      <div class="tiny" style="font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);margin-top:6px">Identidade visual (opcional)</div>
+      <div class="field"><label>Logo (URL)</label><input name="logo_url" placeholder="https://..."></div>
+      <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field"><label>Cor principal</label><input name="primary_color" type="color" value="#E0352B"></div>
+        <div class="field"><label>Cor secundária</label><input name="secondary_color" type="color" value="#05223D"></div>
+      </div>
+      <button class="btn block" style="margin-top:6px">Criar restaurante</button>
+    </form>`, { wide:true });
+}
+async function createClient(e) {
+  e.preventDefault(); const f = new FormData(e.target);
+  const body = Object.fromEntries(f.entries());
+  body.status = f.get('status')==='1' ? 1 : 0;
+  body.white_label = f.get('white_label') ? 1 : 0;
+  try { const r = await api('/api/platform/clients', { method:'POST', body }); toast('Restaurante criado · tenant '+r.tenant_id,'ok'); closeModal(); renderClientes(); }
+  catch (err) { toast(err.message,'err'); }
+}
+// Acessar ambiente: Master entra na operação do restaurante (Modo Master).
+async function accessEnv(unitId, name) {
+  if (!unitId) { toast('Restaurante sem unidade.','err'); return; }
+  if (!confirm(`Acessar o ambiente de "${name}" como Master?\nVocê poderá administrar e dar suporte, com um aviso "Modo Master".`)) return;
+  try { await api(`/api/platform/impersonate/${unitId}`, { method:'POST' }); location.href = '/app'; }
+  catch (e) { toast(e.message,'err'); }
+}
+
+/* ------------------------------ AUDITORIA ------------------------------ */
+async function renderAuditoria() {
+  const el = document.getElementById('m-content');
+  let logs = [];
+  try { logs = (await api('/api/platform/audit')).logs || []; } catch { el.innerHTML = '<div class="empty">Sem registros.</div>'; return; }
+  el.innerHTML = `<p class="muted" style="margin:-4px 0 14px">Ações administrativas da VEXXA360 na plataforma.</p>
+    <div class="card tight"><div style="overflow-x:auto"><table class="tbl">
+      <thead><tr><th>Quando</th><th>Ação</th><th>Detalhe</th><th>Por</th></tr></thead>
+      <tbody>${logs.map(l=>`<tr><td class="tiny">${esc((l.created_at||'').slice(0,16))}</td><td>${esc(l.action)}</td><td class="small">${esc(l.detail)}</td><td class="tiny">${esc(l.actor)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Sem registros.</td></tr>'}</tbody></table></div></div>`;
+}
+
+/* ------------------------------ GERENCIAR CLIENTE ------------------------------ */
+let MT = { tab:'dados', tenant:null };
+async function manageTenant(id) {
+  const [tRes, units, feat, brand, emp] = await Promise.all([
+    api('/api/platform/tenants'), api(`/api/platform/tenants/${id}/units`),
+    api(`/api/platform/tenants/${id}/features`), api(`/api/platform/tenants/${id}/branding`),
+    api(`/api/platform/tenants/${id}/employees`),
+  ]);
+  PLANS = tRes.plans || PLANS;
+  const t = tRes.tenants.find(x=>x.id===id);
+  MT = { tenant:t, units:units.units, feat, brand:brand.branding, defaults:brand.defaults, emp };
+  renderManage();
+}
+function renderManage() {
+  const t = MT.tenant;
+  const tabs = [['dados','Informações'],['units','Unidades'],['employees','Funcionários'],['features','Recursos'],['branding','White Label'],['plan','Plano']];
+  openModal(`<h3>${esc(t.name)} <span class="badge ${t.status?'ok':'danger'}">${t.status?'Ativo':'Inativo'}</span></h3>
+    <div class="chips" style="margin:8px 0 12px">${tabs.map(([v,l])=>`<button class="chip ${MT.tab===v?'active':''}" onclick="mtTab('${v}')">${l}</button>`).join('')}</div>
+    <div id="mt-body"></div>`, { wide:true });
+  renderManageBody();
+}
+function mtTab(v){ MT.tab=v; renderManageBody(); document.querySelectorAll('#__modal .chip').forEach(c=>c.classList.toggle('active', c.textContent.trim().toLowerCase().startsWith(({dados:'infor',units:'unid',employees:'func',features:'recur',branding:'white',plan:'plano'})[v]))); }
+function renderManageBody() {
+  const el = document.getElementById('mt-body'); const t = MT.tenant;
+  if (MT.tab==='dados') {
+    el.innerHTML = `<div class="card tight" style="margin-bottom:12px">
+        <div class="row between"><span class="muted">CNPJ</span><b>${esc(t.cnpj||'—')}</b></div>
+        <div class="row between"><span class="muted">Responsável</span><b>${esc(t.responsavel||'—')}</b></div>
+        <div class="row between"><span class="muted">Plano</span><b>${esc(t.plan_label||t.plan)}</b></div>
+        <div class="row between"><span class="muted">Cadastro</span><b>${esc((t.created_at||'').slice(0,10))}</b></div>
+        <div class="row between"><span class="muted">Último acesso</span><b>${t.last_access?esc(t.last_access.slice(0,16)):'—'}</b></div>
+        <div class="row between"><span class="muted">Unidades</span><b>${t.units}</b></div>
+        <div class="row between"><span class="muted">Funcionários</span><b>${t.employees} / ${t.limits?t.limits.max_users:'—'}</b></div>
+        <div class="row between"><span class="muted">White Label</span><b>${t.white_label?'Ativo':'Padrão Rango'}</b></div>
+      </div>
+      <form class="stack" onsubmit="return saveTenant(event,${t.id})">
+        <div class="field"><label>Tipo de estabelecimento</label><select name="tipo">
+          <option value="restaurante" ${(t.tipo||'restaurante')==='restaurante'?'selected':''}>Restaurante</option>
+          <option value="adega_bar" ${t.tipo==='adega_bar'?'selected':''}>Adega / Bar</option>
+        </select><div class="tiny" style="color:var(--ink-3);margin-top:4px">Mudar para Adega/Bar ativa o Módulo Adega/Bar automaticamente.</div></div>
+        <div class="field"><label>Nome</label><input name="name" value="${esc(t.name)}"></div>
+        <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field"><label>Nome fantasia</label><input name="nome_fantasia" value="${esc(t.nome_fantasia||'')}"></div>
+          <div class="field"><label>CNPJ</label><input name="cnpj" value="${esc(t.cnpj||'')}"></div>
+          <div class="field"><label>Responsável</label><input name="responsavel" value="${esc(t.responsavel||'')}"></div>
+          <div class="field"><label>WhatsApp</label><input name="whatsapp" value="${esc(t.whatsapp||'')}"></div>
+        </div>
+        <div style="display:flex;gap:8px"><button class="btn block">Salvar</button>
+          <button type="button" class="btn ${t.status?'danger':'ok'} block" onclick="toggleTenant(${t.id},${t.status?0:1})">${t.status?'Desativar cliente':'Ativar cliente'}</button></div>
+      </form>
+      <button class="btn ghost block" style="margin-top:10px" onclick="accessEnv(${t.main_unit&&t.main_unit.id?t.main_unit.id:0},'${esc((t.name||'').replace(/'/g,''))}')">↪ Acessar ambiente do restaurante (Modo Master)</button>`;
+  } else if (MT.tab==='units') {
+    el.innerHTML = `<div class="card tight"><table class="tbl"><thead><tr><th>Unidade</th><th>Link público</th><th>Status</th></tr></thead>
+      <tbody>${MT.units.map(u=>`<tr><td>${esc(u.unit_name||u.name)}</td><td><a href="/r/${esc(u.slug)}" target="_blank" style="color:var(--brand)">/r/${esc(u.slug)}</a></td><td>${u.active?'<span class="badge ok">Ativa</span>':'<span class="badge danger">Inativa</span>'}</td></tr>`).join('')}</tbody></table></div>
+      <button class="btn block" style="margin-top:12px" onclick="newUnitForm(${t.id})">+ Nova unidade</button>
+      <div id="mt-unit-form"></div>`;
+  } else if (MT.tab==='employees') {
+    const e = MT.emp; const s = e.stats; const L = e.roleLabels||{};
+    el.innerHTML = `<div class="stats" style="margin-bottom:12px">
+        <div class="stat accent"><div class="label">Ativos</div><div class="value">${s.ativos}</div></div>
+        <div class="stat"><div class="label">Inativos</div><div class="value">${s.inativos}</div></div>
+        <div class="stat"><div class="label">Limite</div><div class="value">${s.limite}</div><div class="sub">${s.disponiveis} disponíveis</div></div>
+      </div>
+      <div class="card tight"><table class="tbl"><thead><tr><th>Funcionário</th><th>Cargo</th><th>Unidade</th><th>Status</th><th>Último acesso</th></tr></thead>
+      <tbody>${e.employees.map(x=>`<tr><td>${esc(x.name)}<div class="tiny">${esc(x.email)}</div></td><td>${esc(L[x.role]||x.role)}</td><td class="tiny">${esc(x.unidade||'—')}</td><td>${x.active?'<span class="badge ok">Ativo</span>':'<span class="badge mut">Inativo</span>'}</td><td class="tiny">${x.last_login?esc(x.last_login.slice(0,16)):'—'}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">Nenhum funcionário.</td></tr>'}</tbody></table></div>
+      <p class="tiny" style="color:var(--ink-3);margin-top:8px">Funcionários pertencem exclusivamente a este cliente (isolamento garantido no backend).</p>`;
+  } else if (MT.tab==='features') {
+    const f = MT.feat;
+    el.innerHTML = `<p class="tiny">Recursos disponíveis para este cliente (Feature Flags). O backend respeita estas regras.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0">
+        ${f.modules.map(m=>`<label class="opt-row" style="justify-content:space-between"><span>${esc(f.labels[m]||m)}</span><input type="checkbox" data-mod="${m}" ${f.effective[m]?'checked':''}></label>`).join('')}
+      </div>
+      <button class="btn block" onclick="saveFeatures(${t.id})">Salvar recursos</button>`;
+  } else if (MT.tab==='branding') {
+    const b = MT.brand;
+    const fld = (k,l,type='text') => `<div class="field"><label>${l}</label><input data-b="${k}" type="${type}" value="${esc(b[k]||'')}" placeholder="padrão Rango"></div>`;
+    el.innerHTML = `<label class="opt-row" style="justify-content:space-between;margin-bottom:10px"><span><b>Ativar White Label</b> (identidade própria)</span><input type="checkbox" id="wl-on" ${t.white_label?'checked':''}></label>
+      <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        ${fld('display_name','Nome exibido')}${fld('logo_url','Logo (URL)')}
+        ${fld('primary_color','Cor primária','color')}${fld('button_color','Cor dos botões','color')}
+        ${fld('accent_color','Cor de destaque','color')}${fld('favicon_url','Favicon (URL)')}
+      </div>
+      <button class="btn block" style="margin-top:10px" onclick="saveBranding(${t.id})">Salvar White Label</button>
+      <p class="tiny" style="color:var(--ink-3);margin-top:8px">Campos em branco usam o padrão do Rango (fallback).</p>`;
+  } else if (MT.tab==='plan') {
+    const lim = t.limits||{};
+    const planOpts = Object.entries(PLANS).map(([k,v])=>`<option value="${k}" ${t.plan===k?'selected':''}>${esc(v.label)} — até ${v.max_units} unid., ${v.max_users} usuários${v.white_label?' · White Label':''}</option>`).join('');
+    el.innerHTML = `<div class="field"><label>Plano do cliente</label><select id="plan-sel">${planOpts}</select></div>
+      <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field"><label>Limite de funcionários</label><input id="lim-users" type="number" min="1" value="${lim.max_users||''}"></div>
+        <div class="field"><label>Limite de unidades</label><input id="lim-units" type="number" min="1" value="${lim.max_units||''}"></div>
+      </div>
+      <p class="tiny">O plano define recursos e limites padrão. Os limites acima sobrescrevem o plano para este cliente.</p>
+      <button class="btn block" onclick="savePlan(${t.id})">Salvar plano e limites</button>`;
+  }
+}
+async function saveTenant(e,id){ e.preventDefault(); const body=Object.fromEntries(new FormData(e.target).entries()); try{ await api(`/api/platform/tenants/${id}`,{method:'PATCH',body}); toast('Salvo.','ok'); manageTenant(id); }catch(err){ toast(err.message,'err'); } }
+async function toggleTenant(id,active){ try{ await api(`/api/platform/tenants/${id}/status`,{method:'POST',body:{active}}); toast(active?'Cliente ativado.':'Cliente desativado.','ok'); closeModal(); go(VIEW); }catch(e){ toast(e.message,'err'); } }
+function newUnitForm(id){ document.getElementById('mt-unit-form').innerHTML = `<div class="card tight" style="margin-top:10px"><div class="field"><label>Nome da unidade</label><input id="u-name"></div><div class="field"><label>E-mail do admin (opcional)</label><input id="u-email" type="email"></div><div class="field"><label>Senha inicial (se admin)</label><input id="u-pass" type="password"></div><button class="btn block" onclick="createUnit(${id})">Criar unidade</button></div>`; }
+async function createUnit(id){ const b={name:document.getElementById('u-name').value, admin_email:document.getElementById('u-email').value, admin_password:document.getElementById('u-pass').value, admin_name:'Administrador'}; try{ await api(`/api/platform/tenants/${id}/units`,{method:'POST',body:b}); toast('Unidade criada.','ok'); manageTenant(id); }catch(e){ toast(e.message,'err'); } }
+async function saveFeatures(id){ const features={}; document.querySelectorAll('#mt-body [data-mod]').forEach(c=>features[c.dataset.mod]=c.checked); try{ await api(`/api/platform/tenants/${id}/features`,{method:'PUT',body:{features}}); toast('Recursos salvos.','ok'); }catch(e){ toast(e.message,'err'); } }
+async function saveBranding(id){ const body={}; document.querySelectorAll('#mt-body [data-b]').forEach(c=>{ if(c.value) body[c.dataset.b]=c.value; }); try{ await api(`/api/platform/tenants/${id}/branding`,{method:'PUT',body}); await api(`/api/platform/tenants/${id}`,{method:'PATCH',body:{white_label:document.getElementById('wl-on').checked?1:0}}); toast('White Label salvo.','ok'); manageTenant(id); }catch(e){ toast(e.message,'err'); } }
+async function savePlan(id){ try{ await api(`/api/platform/tenants/${id}`,{method:'PATCH',body:{plan:document.getElementById('plan-sel').value}}); const mu=document.getElementById('lim-users').value, mn=document.getElementById('lim-units').value; if(mu||mn) await api(`/api/platform/tenants/${id}/limits`,{method:'PUT',body:{max_users:mu,max_units:mn}}); toast('Plano e limites salvos.','ok'); manageTenant(id); }catch(e){ toast(e.message,'err'); } }
+
+function applyMasterCollapsed(){ let c=false; try{ c=localStorage.getItem('rango_master_collapsed')==='1'; }catch{} const sh=document.querySelector('.msh'); if(sh) sh.classList.toggle('nav-collapsed', c); }
+function toggleMasterCollapse(){ const sh=document.querySelector('.msh'); if(!sh) return; const now=!sh.classList.contains('nav-collapsed'); sh.classList.toggle('nav-collapsed', now); try{ localStorage.setItem('rango_master_collapsed', now?'1':'0'); }catch{} }
+async function logout() { await api('/api/auth/logout', { method: 'POST' }); location.href = '/'; }
+window.addEventListener('unhandledrejection', (e) => { if (e.reason && e.reason.status === 401) location.href = '/admin'; });
+boot();
+</script>
+</body>
+</html>
