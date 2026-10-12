@@ -7,16 +7,22 @@ import type { ActionState } from "./validation/common";
  * (com `<form action>` os campos voltam ao valor inicial após qualquer envio — inclusive após
  * erro de validação, o que apagaria o que a pessoa digitou).
  */
-export function useServerForm(action: (prev: ActionState, fd: FormData) => Promise<ActionState>) {
+export function useServerForm(action: (prev: ActionState, fd: FormData) => Promise<ActionState>, opts: { resetOnSuccess?: boolean } = {}) {
   const [state, setState] = useState<ActionState>({});
   const [pending, start] = useTransition();
   const onSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      const fd = new FormData(e.currentTarget);
-      start(async () => setState(await action({}, fd)));
+      const form = e.currentTarget;
+      const fd = new FormData(form);
+      setState({}); // some a mensagem anterior enquanto o novo envio roda
+      start(async () => {
+        const result = await action({}, fd);
+        if (result.ok && opts.resetOnSuccess) form.reset(); // junto com a mensagem, no mesmo instante
+        setState(result);
+      });
     },
-    [action],
+    [action, opts.resetOnSuccess],
   );
   return { state, pending, onSubmit };
 }

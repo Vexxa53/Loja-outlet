@@ -1,5 +1,4 @@
 "use client";
-import { useEffect, useRef } from "react";
 import { saveBanner, saveCategory, savePromotion } from "@/lib/actions/catalog";
 import { saveBranding, saveSettings } from "@/lib/actions/settings";
 import { createTenant } from "@/lib/actions/master";
@@ -15,19 +14,11 @@ function Result({ state }: { state: ActionState }) {
   return null;
 }
 
-/** Limpa o formulário depois de criar (não em edição). */
-function useResetOnSuccess(state: ActionState, enabled: boolean) {
-  const ref = useRef<HTMLFormElement>(null);
-  useEffect(() => { if (state.ok && enabled) ref.current?.reset(); }, [state, enabled]);
-  return ref;
-}
-
 export function CategoryForm({ category, imageUrl }: { category?: { id: string; name: string; description: string | null; active: boolean; sort_order: number }; imageUrl?: string | null }) {
-  const { state, onSubmit, pending } = useServerForm(saveCategory);
-  const ref = useResetOnSuccess(state, !category);
+  const { state, onSubmit, pending } = useServerForm(saveCategory, { resetOnSuccess: !category });
   const fe = state.fieldErrors ?? {};
   return (
-    <form ref={ref} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2" noValidate>
+    <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2" noValidate>
       {category && <input type="hidden" name="id" value={category.id} />}
       <Field label="Nome" name="name" error={fe.name}><input id="name" name="name" defaultValue={category?.name} required maxLength={80} className="field" placeholder="Ex.: Vestidos" /></Field>
       <Field label="Ordem de exibição" name="sortOrder" error={fe.sortOrder}><input id="sortOrder" name="sortOrder" type="number" min={0} defaultValue={category?.sort_order ?? 0} className="field" /></Field>
@@ -40,11 +31,10 @@ export function CategoryForm({ category, imageUrl }: { category?: { id: string; 
 }
 
 export function PromotionForm({ products }: { products: { id: string; name: string; price: string }[] }) {
-  const { state, onSubmit, pending } = useServerForm(savePromotion);
-  const ref = useResetOnSuccess(state, true);
+  const { state, onSubmit, pending } = useServerForm(savePromotion, { resetOnSuccess: true });
   const fe = state.fieldErrors ?? {};
   return (
-    <form ref={ref} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2" noValidate>
+    <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2" noValidate>
       <div className="sm:col-span-2"><Field label="Nome da campanha" name="name" error={fe.name}><input id="name" name="name" required maxLength={120} className="field" placeholder="Ex.: Liquida de Verão" /></Field></div>
       <Field label="Produto" name="productId" error={fe.productId} hint="Deixe em “Toda a loja” para aplicar a todos os produtos.">
         <select id="productId" name="productId" className="field" defaultValue=""><option value="">Toda a loja</option>{products.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.price})</option>)}</select>
@@ -66,11 +56,10 @@ export function PromotionForm({ products }: { products: { id: string; name: stri
 }
 
 export function BannerForm({ banner, imageUrl }: { banner?: { id: string; title: string; subtitle: string | null; button_label: string | null; destination_url: string | null; active: boolean; sort_order: number }; imageUrl?: string | null }) {
-  const { state, onSubmit, pending } = useServerForm(saveBanner);
-  const ref = useResetOnSuccess(state, !banner);
+  const { state, onSubmit, pending } = useServerForm(saveBanner, { resetOnSuccess: !banner });
   const fe = state.fieldErrors ?? {};
   return (
-    <form ref={ref} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2" noValidate>
+    <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2" noValidate>
       {banner && <input type="hidden" name="id" value={banner.id} />}
       <div className="sm:col-span-2"><ImageField name="image" label="Imagem do banner" current={imageUrl} required={!banner} /></div>
       <Field label="Título" name="title" error={fe.title}><input id="title" name="title" defaultValue={banner?.title} required maxLength={120} className="field" /></Field>
@@ -164,11 +153,10 @@ export function SettingsForm({ s }: { s: S }) {
 }
 
 export function TenantForm() {
-  const { state, onSubmit, pending } = useServerForm(createTenant);
-  const ref = useResetOnSuccess(state, true);
+  const { state, onSubmit, pending } = useServerForm(createTenant, { resetOnSuccess: true });
   const fe = state.fieldErrors ?? {};
   return (
-    <form ref={ref} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-3" noValidate>
+    <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-3" noValidate>
       <Field label="Nome da loja" name="name" error={fe.name}><input id="name" name="name" required className="field" /></Field>
       <Field label="Identificador (URL)" name="slug" error={fe.slug} hint="/loja/identificador — letras minúsculas, números e hífens."><input id="slug" name="slug" required pattern="[a-z0-9]+(-[a-z0-9]+)*" className="field" /></Field>
       <Field label="E-mail do lojista" name="ownerEmail" error={fe.ownerEmail} hint="Se não tiver conta, enviamos um convite."><input id="ownerEmail" name="ownerEmail" type="email" required className="field" /></Field>

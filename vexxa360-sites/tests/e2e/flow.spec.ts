@@ -185,4 +185,122 @@ test.describe.serial("Vexxa360 Sites — fluxo comercial ponta a ponta", () => {
     expect(psql(`select stock_quantity from product_variants where product_id='${productId}' and size='P' and color='Branca'`)).toBe("3");
     expect(psql(`select count(*) from inventory_movements where reason like 'Ajuste no cadastro%'`)).toBe("1");
   });
+
+  // ------------------------------------------------------------------ promoções e banner
+  test("promoções: no ar, agendada e expirada; preço calculado no servidor", async ({ page }) => {
+    await login(page, OWNER_A);
+    await page.goto("/admin/promocoes");
+    const fill = async (name: string, type: string, value: string, startMs: number, endMs: number) => {
+      await page.getByLabel("Nome da campanha").fill(name);
+      await page.getByLabel("Produto", { exact: true }).selectOption(productId);
+      await page.getByLabel("Tipo de desconto").selectOption(type);
+      await page.getByLabel("Valor", { exact: true }).fill(value);
+      await page.getByLabel(/Início/).fill(brInput(startMs));
+      await page.getByLabel(/Encerramento/).fill(brInput(endMs));
+      await page.getByRole("button", { name: "Criar campanha" }).click();
+      await expect(page.getByRole("button", { name: /Criar campanha|Criando/ })).toBeEnabled();   // espera o envio terminar
+    };
+    const H = 3600_000;
+    // validações
+    await fill("Inválida", "percent", "95", -H, H);
+    await expect(page.getByText("máximo: 90%").first()).toBeVisible();
+    await fill("Inválida", "percent", "10", H, -H);
+    await expect(page.getByText("depois do início").first()).toBeVisible();
+    await fill("Inválida", "percent", "-5", -H, H);
+    await expect(page.getByText(/inválido|maior que zero/).first()).toBeVisible();
+
+    await fill("Futura", "fixed_price", "50,00", 24 * H, 48 * H);
+    await expect(page.getByText("Campanha criada").first()).toBeVisible();
+    await fill("Expirada", "amount_off", "100,00", -48 * H, -24 * H);
+    await expect(page.getByText("Campanha criada").first()).toBeVisible();
+    // futura e expirada não alteram o preço (promocional do produto = 129,90)
+    expect(psql(`select effective_price('${productId}')`)).toBe("129.90");
+    await fill("Liquida", "percent", "20", -H, 24 * H);
+    await expect(page.getByText("Campanha criada").first()).toBeVisible();
+    expect(psql(`select effective_price('${productId}')`)).toBe("119.92");   // 149,90 − 20% (menor que 129,90)
+    await expect(page.getByText("No ar agora")).toBeVisible();
+    await expect(page.getByText("Agendada")).toBeVisible();
+    await expect(page.getByText("Encerrada")).toBeVisible();
+  });
+
+  test("banner: cria com imagem e exige imagem", async ({ page }) => {
+    await login(page, OWNER_A);
+    await page.goto("/admin/banners");
+    await page.getByLabel("Título", { exact: true }).fill("Coleção Verão");
+    await page.getByRole("button", { name: "Criar banner" }).click();
+    expect(await page.locator("#image").evaluate((el: HTMLInputElement) => el.validity.valueMissing)).toBe(true);   // imagem obrigatória
+    await page.locator("#image").setInputFiles(img("banner.png", [220, 180, 140]));
+    await page.getByLabel("Subtítulo").fill("Até 20% off");
+    await page.getByLabel("Texto do botão").fill("Ver ofertas");
+    await page.getByLabel("Destino do botão").fill("//evil.example");
+    await page.getByRole("button", { name: "Criar banner" }).click();
+    await expect(page.getByText(/Destino: use um caminho/).first()).toBeVisible();
+    await page.getByLabel("Destino do botão").fill("/loja/loja-a/produtos?promocao=1");
+    await page.getByRole("button", { name: "Criar banner" }).click();
+    await expect(page.getByText("Banner criado.").first()).toBeVisible();
+    expect(psql("select count(*) from banners")).toBe("1");
+  });
+
+  // ------------------------------------------------------------------ vitrine pública
+  test("vitrine pública: identidade, banner, categorias, produto com desconto, rodapé", async ({ page }) => {
+    await page.goto("/loja/loja-a");
+    await expect(page.getByRole("heading", { name: "Coleção Verão" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver ofertas" })).toBeVisible();
+    await expect(page.locator('header img[alt="Atelier Aurora"]')).toBeVisible();       // logotipo
+    await expect(page.getByRole("link", { name: "Camisetas", exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Camiseta Linho/ }).first()).toBeVisible();
+    await expect(page.getByText("-20%").first()).toBeVisible();
+    await expect(page.getByText("R$ 119,92").first()).toBeVisible();
+    await expect(page.locator("footer").getByText("@atelier.aurora")).toBeVisible();
+    await expect(page.locator("footer").getByText("Seg a sáb, 9h às 18h")).toBeVisible();
+    await expect(page.locator('footer a[href="https://lojaa.test/privacidade"]')).toBeVisible();
+    await expect(page.locator('a[href^="https://wa.me/5511999990001"]').first()).toBeVisible();
+    // cor do lojista aplicada via variável CSS
+    const brand = await page.locator("div.flex.min-h-screen").first().evaluate((el) => (el as HTMLElement).style.getPropertyValue("--brand"));
+    expect(brand).toBe("#2a3a4a");
+    // custo de aquisição nunca vai para o HTML público
+    const html = await page.content();
+    expect(html).not.toContain("45,00"); expect(html).not.toContain("cost_price"); expect(html).not.toContain("45.00");
+  });
+
+  test("catálogo: busca, categoria, tamanho, cor, preço, disponibilidade, promoção e ordenação", async ({ page }) => {
+    const ok = async (qs: string, visible: boolean) => {
+      await page.goto(`/loja/loja-a/produtos${qs}`);
+      const card = page.getByRole("link", { name: /Camiseta Linho/ });
+      if (visible) await expect(card.first(), qs).toBeVisible(); else { await expect(page.getByRole("main").getByText("Nenhum produto encontrado")).toBeVisible(); }
+    };
+    await ok("", true);
+    await ok("?q=linho", true);
+    await ok("?q=xyz", false);
+    await ok("?tamanho=M", true);
+    await ok("?tamanho=GG", false);
+    await ok("?cor=Preta", true);
+    await ok("?cor=Verde", false);
+    await ok("?min=100&max=130", true);
+    await ok("?min=200", false);
+    await ok("?disponivel=1", true);
+    await ok("?promocao=1", true);
+    await ok("?ordem=menor-preco", true);
+    await ok("?q=%25_%27;--", false);                       // curingas e aspas não quebram a consulta
+    const cat = psql("select id from categories where name='Camisetas'");
+    await ok(`?categoria=${cat}`, true);
+    await ok(`?categoria=${psql("select id from categories where name='Vestidos'")}`, false);
+    await ok("?categoria=nao-e-uuid", true);                // valor inválido é ignorado
+    await page.goto("/loja/loja-a/produtos?pagina=999");     // página fora do intervalo não quebra
+    await expect(page.getByRole("main").getByText("Nenhum produto encontrado")).toBeVisible();
+  });
+
+  test("paginação (13 produtos): 12 por página e link para a próxima", async ({ page }) => {
+    const B = psql("select id from tenants where slug='loja-b'");
+    psql(`update store_settings set published=true, whatsapp='5511999990002' where tenant_id='${B}'`);
+    psql(`insert into products (tenant_id,name,slug,regular_price,status) select '${B}','Peça '||g,'peca-'||g,10+g,'published' from generate_series(1,13) g`);
+    psql(`insert into product_variants (tenant_id,product_id,size,stock_quantity) select tenant_id,id,'U',5 from products where tenant_id='${B}'`);
+    await page.goto("/loja/loja-b/produtos");
+    await expect(page.locator('a[href^="/loja/loja-b/produto/"]')).toHaveCount(12);
+    await page.getByRole("link", { name: "Próxima" }).click();
+    await expect(page).toHaveURL(/pagina=2/);
+    await expect(page.locator('a[href^="/loja/loja-b/produto/"]')).toHaveCount(1);
+    psql(`delete from products where tenant_id='${B}'`);
+    psql(`update store_settings set published=false where tenant_id='${B}'`);
+  });
 });
