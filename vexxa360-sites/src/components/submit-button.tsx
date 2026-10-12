@@ -3,10 +3,11 @@ import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { cn } from "./ui";
 
-export function SubmitButton({ children, className, pendingText, variant = "primary" }: {
-  children: React.ReactNode; className?: string; pendingText?: string; variant?: "primary" | "secondary" | "danger";
+export function SubmitButton({ children, className, pendingText, variant = "primary", pending: pendingProp }: {
+  children: React.ReactNode; className?: string; pendingText?: string; variant?: "primary" | "secondary" | "danger"; pending?: boolean;
 }) {
-  const { pending } = useFormStatus();
+  const status = useFormStatus();
+  const pending = pendingProp ?? status.pending;
   return (
     <button type="submit" disabled={pending} aria-busy={pending}
       className={cn(btn(variant), "disabled:cursor-not-allowed disabled:opacity-60", className)}>

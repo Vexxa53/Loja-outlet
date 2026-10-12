@@ -1,9 +1,10 @@
 "use client";
-import { useActionState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { saveBanner, saveCategory, savePromotion } from "@/lib/actions/catalog";
 import { saveBranding, saveSettings } from "@/lib/actions/settings";
 import { createTenant } from "@/lib/actions/master";
-import { initialState, type ActionState } from "@/lib/validation/common";
+import { useServerForm } from "@/lib/use-server-form";
+import type { ActionState } from "@/lib/validation/common";
 import { Alert, Card, Field } from "../ui";
 import { SubmitButton } from "../submit-button";
 import { ImageField } from "./image-field";
@@ -22,28 +23,28 @@ function useResetOnSuccess(state: ActionState, enabled: boolean) {
 }
 
 export function CategoryForm({ category, imageUrl }: { category?: { id: string; name: string; description: string | null; active: boolean; sort_order: number }; imageUrl?: string | null }) {
-  const [state, action] = useActionState(saveCategory, initialState);
+  const { state, onSubmit, pending } = useServerForm(saveCategory);
   const ref = useResetOnSuccess(state, !category);
   const fe = state.fieldErrors ?? {};
   return (
-    <form ref={ref} action={action} className="grid gap-4 sm:grid-cols-2" noValidate>
+    <form ref={ref} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2" noValidate>
       {category && <input type="hidden" name="id" value={category.id} />}
       <Field label="Nome" name="name" error={fe.name}><input id="name" name="name" defaultValue={category?.name} required maxLength={80} className="field" placeholder="Ex.: Vestidos" /></Field>
       <Field label="Ordem de exibição" name="sortOrder" error={fe.sortOrder}><input id="sortOrder" name="sortOrder" type="number" min={0} defaultValue={category?.sort_order ?? 0} className="field" /></Field>
       <div className="sm:col-span-2"><Field label="Descrição (opcional)" name="description" error={fe.description}><input id="description" name="description" defaultValue={category?.description ?? ""} maxLength={500} className="field" /></Field></div>
       <div className="sm:col-span-2"><ImageField name="image" label="Imagem da categoria (opcional)" current={imageUrl} /></div>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="active" defaultChecked={category?.active ?? true} /> Visível na loja</label>
-      <div className="sm:col-span-2 space-y-3"><Result state={state} /><SubmitButton pendingText="Salvando…">{category ? "Salvar alterações" : "Criar categoria"}</SubmitButton></div>
+      <div className="sm:col-span-2 space-y-3"><Result state={state} /><SubmitButton pending={pending} pendingText="Salvando…">{category ? "Salvar alterações" : "Criar categoria"}</SubmitButton></div>
     </form>
   );
 }
 
 export function PromotionForm({ products }: { products: { id: string; name: string; price: string }[] }) {
-  const [state, action] = useActionState(savePromotion, initialState);
+  const { state, onSubmit, pending } = useServerForm(savePromotion);
   const ref = useResetOnSuccess(state, true);
   const fe = state.fieldErrors ?? {};
   return (
-    <form ref={ref} action={action} className="grid gap-4 sm:grid-cols-2" noValidate>
+    <form ref={ref} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2" noValidate>
       <div className="sm:col-span-2"><Field label="Nome da campanha" name="name" error={fe.name}><input id="name" name="name" required maxLength={120} className="field" placeholder="Ex.: Liquida de Verão" /></Field></div>
       <Field label="Produto" name="productId" error={fe.productId} hint="Deixe em “Toda a loja” para aplicar a todos os produtos.">
         <select id="productId" name="productId" className="field" defaultValue=""><option value="">Toda a loja</option>{products.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.price})</option>)}</select>
@@ -59,17 +60,17 @@ export function PromotionForm({ products }: { products: { id: string; name: stri
         <Field label="Encerramento (horário de Brasília)" name="endsAt" error={fe.endsAt}><input id="endsAt" name="endsAt" type="datetime-local" required className="field" /></Field>
       </div>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="active" defaultChecked /> Campanha ativa (entra e sai do ar sozinha nas datas)</label>
-      <div className="sm:col-span-2 space-y-3"><Result state={state} /><SubmitButton pendingText="Criando…">Criar campanha</SubmitButton></div>
+      <div className="sm:col-span-2 space-y-3"><Result state={state} /><SubmitButton pending={pending} pendingText="Criando…">Criar campanha</SubmitButton></div>
     </form>
   );
 }
 
 export function BannerForm({ banner, imageUrl }: { banner?: { id: string; title: string; subtitle: string | null; button_label: string | null; destination_url: string | null; active: boolean; sort_order: number }; imageUrl?: string | null }) {
-  const [state, action] = useActionState(saveBanner, initialState);
+  const { state, onSubmit, pending } = useServerForm(saveBanner);
   const ref = useResetOnSuccess(state, !banner);
   const fe = state.fieldErrors ?? {};
   return (
-    <form ref={ref} action={action} className="grid gap-4 sm:grid-cols-2" noValidate>
+    <form ref={ref} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2" noValidate>
       {banner && <input type="hidden" name="id" value={banner.id} />}
       <div className="sm:col-span-2"><ImageField name="image" label="Imagem do banner" current={imageUrl} required={!banner} /></div>
       <Field label="Título" name="title" error={fe.title}><input id="title" name="title" defaultValue={banner?.title} required maxLength={120} className="field" /></Field>
@@ -78,17 +79,17 @@ export function BannerForm({ banner, imageUrl }: { banner?: { id: string; title:
       <Field label="Destino do botão" name="destinationUrl" error={fe.destinationUrl} hint="Ex.: /loja/sua-loja/produtos?promocao=1 ou https://…"><input id="destinationUrl" name="destinationUrl" defaultValue={banner?.destination_url ?? ""} className="field" /></Field>
       <Field label="Ordem" name="sortOrder" error={fe.sortOrder}><input id="sortOrder" name="sortOrder" type="number" min={0} defaultValue={banner?.sort_order ?? 0} className="field" /></Field>
       <label className="flex items-center gap-2 self-end text-sm"><input type="checkbox" name="active" defaultChecked={banner?.active ?? true} /> Exibir na loja</label>
-      <div className="sm:col-span-2 space-y-3"><Result state={state} /><SubmitButton pendingText="Salvando…">{banner ? "Salvar banner" : "Criar banner"}</SubmitButton></div>
+      <div className="sm:col-span-2 space-y-3"><Result state={state} /><SubmitButton pending={pending} pendingText="Salvando…">{banner ? "Salvar banner" : "Criar banner"}</SubmitButton></div>
     </form>
   );
 }
 
 type S = Record<string, any>;
 export function BrandingForm({ s, logoUrl }: { s: S; logoUrl: string | null }) {
-  const [state, action] = useActionState(saveBranding, initialState);
+  const { state, onSubmit, pending } = useServerForm(saveBranding);
   const fe = state.fieldErrors ?? {};
   return (
-    <form action={action} className="space-y-5" noValidate>
+    <form onSubmit={onSubmit} className="space-y-5" noValidate>
       <Card>
         <h2 className="mb-4 font-serif text-xl">Identidade</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -110,16 +111,16 @@ export function BrandingForm({ s, logoUrl }: { s: S; logoUrl: string | null }) {
         <h2 className="mb-4 font-serif text-xl">Redes</h2>
         <Field label="Instagram" name="instagram" error={fe.instagram} hint="Somente o usuário, sem @ (ou cole o link do perfil)."><input id="instagram" name="instagram" defaultValue={s.instagram ?? ""} className="field" placeholder="minhaloja" /></Field>
       </Card>
-      <div className="space-y-3"><Result state={state} /><SubmitButton pendingText="Salvando…">Salvar personalização</SubmitButton></div>
+      <div className="space-y-3"><Result state={state} /><SubmitButton pending={pending} pendingText="Salvando…">Salvar personalização</SubmitButton></div>
     </form>
   );
 }
 
 export function SettingsForm({ s }: { s: S }) {
-  const [state, action] = useActionState(saveSettings, initialState);
+  const { state, onSubmit, pending } = useServerForm(saveSettings);
   const fe = state.fieldErrors ?? {};
   return (
-    <form action={action} className="space-y-5" noValidate>
+    <form onSubmit={onSubmit} className="space-y-5" noValidate>
       <Card>
         <h2 className="mb-4 font-serif text-xl">Atendimento e pedidos</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -157,21 +158,21 @@ export function SettingsForm({ s }: { s: S }) {
         <h2 className="mb-2 font-serif text-xl">Publicação</h2>
         <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="published" defaultChecked={s.published} className="mt-0.5" /> <span><strong>Loja publicada</strong> — visível para qualquer pessoa. Desmarque para ocultar a vitrine (você continua vendo a pré-visualização).</span></label>
       </Card>
-      <div className="space-y-3"><Result state={state} /><SubmitButton pendingText="Salvando…">Salvar configurações</SubmitButton></div>
+      <div className="space-y-3"><Result state={state} /><SubmitButton pending={pending} pendingText="Salvando…">Salvar configurações</SubmitButton></div>
     </form>
   );
 }
 
 export function TenantForm() {
-  const [state, action] = useActionState(createTenant, initialState);
+  const { state, onSubmit, pending } = useServerForm(createTenant);
   const ref = useResetOnSuccess(state, true);
   const fe = state.fieldErrors ?? {};
   return (
-    <form ref={ref} action={action} className="grid gap-4 sm:grid-cols-3" noValidate>
+    <form ref={ref} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-3" noValidate>
       <Field label="Nome da loja" name="name" error={fe.name}><input id="name" name="name" required className="field" /></Field>
       <Field label="Identificador (URL)" name="slug" error={fe.slug} hint="/loja/identificador — letras minúsculas, números e hífens."><input id="slug" name="slug" required pattern="[a-z0-9]+(-[a-z0-9]+)*" className="field" /></Field>
       <Field label="E-mail do lojista" name="ownerEmail" error={fe.ownerEmail} hint="Se não tiver conta, enviamos um convite."><input id="ownerEmail" name="ownerEmail" type="email" required className="field" /></Field>
-      <div className="space-y-3 sm:col-span-3"><Result state={state} /><SubmitButton pendingText="Criando…">Criar loja</SubmitButton></div>
+      <div className="space-y-3 sm:col-span-3"><Result state={state} /><SubmitButton pending={pending} pendingText="Criando…">Criar loja</SubmitButton></div>
     </form>
   );
 }

@@ -5,12 +5,16 @@ import type { Banner, CatalogProduct, Category, Product, ProductImage, StoreSett
 
 export const PAGE_SIZE = 12;
 
+// O visitante (anon) só tem GRANT nestas colunas de store_settings — nunca use select("*") na vitrine.
+const STORE_PUBLIC_COLUMNS =
+  "id, tenant_id, store_name, description, logo_path, primary_color, secondary_color, whatsapp, contact_email, instagram, address, business_hours, shipping_info, privacy_url, terms_url, exchange_url, size_guide, seo_title, seo_description, published";
+
 /** Loja pelo slug. O RLS já esconde lojas suspensas/não publicadas de quem não é da equipe. */
 export const getStore = cache(async (slug: string) => {
   const supabase = await createClient();
   const { data: tenant } = await supabase.from("tenants").select("id, name, slug, status").eq("slug", slug).maybeSingle();
   if (!tenant) return null;
-  const { data: settings } = await supabase.from("store_settings").select("*").eq("tenant_id", tenant.id).maybeSingle();
+  const { data: settings } = await supabase.from("store_settings").select(STORE_PUBLIC_COLUMNS).eq("tenant_id", tenant.id).maybeSingle();
   if (!settings) return null;
   return { tenant: tenant as Tenant, settings: settings as StoreSettings };
 });

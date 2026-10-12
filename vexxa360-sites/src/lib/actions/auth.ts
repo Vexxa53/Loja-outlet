@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "../supabase/server";
 import { siteUrl } from "../env";
-import { rateLimit } from "../rate-limit";
+import { isRateLimited, rateLimit, recordHit } from "../rate-limit";
 import { TENANT_COOKIE, getMemberships, safeNext } from "../auth/context";
 import { clientIp } from "./helpers";
 import { fail, formToObject, success, zodFail, type ActionState } from "../validation/common";
@@ -19,14 +19,17 @@ export async function signIn(_prev: ActionState, fd: FormData): Promise<ActionSt
   if (!parsed.success) return zodFail(parsed.error);
   const { email, password } = parsed.data;
 
+  // Só FALHAS contam para o limite (por IP e por e-mail), para frear tentativa de adivinhar senha.
   const ip = await clientIp();
-  if (!rateLimit(`login:${ip}`, 20, 15 * 60_000) || !rateLimit(`login:${email.toLowerCase()}`, 8, 15 * 60_000)) {
+  const ipKey = `login-fail:${ip}`, mailKey = `login-fail:${email.toLowerCase()}`;
+  if (isRateLimited(ipKey, 30) || isRateLimited(mailKey, 8)) {
     return fail("Muitas tentativas. Aguarde alguns minutos e tente novamente.");
   }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
+    recordHit(ipKey, 15 * 60_000); recordHit(mailKey, 15 * 60_000);
     // mensagem única: não revela se o e-mail existe
     return fail(error.status === 429 ? "Muitas tentativas. Aguarde um pouco." : "E-mail ou senha incorretos.");
   }

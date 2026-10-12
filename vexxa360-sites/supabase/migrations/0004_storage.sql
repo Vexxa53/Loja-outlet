@@ -25,15 +25,19 @@ $$;
 grant execute on function public.can_write_store_media(text) to authenticated;
 
 -- (RLS já vem habilitado em storage.objects no Supabase)
+drop policy if exists "store_media_public_read" on storage.objects;
 create policy "store_media_public_read" on storage.objects for select
   using (bucket_id = 'store-media');
 
+drop policy if exists "store_media_member_insert" on storage.objects;
 create policy "store_media_member_insert" on storage.objects for insert to authenticated
   with check (bucket_id = 'store-media' and public.can_write_store_media(name));
 
+drop policy if exists "store_media_member_update" on storage.objects;
 create policy "store_media_member_update" on storage.objects for update to authenticated
   using (bucket_id = 'store-media' and public.can_write_store_media(name))
   with check (bucket_id = 'store-media' and public.can_write_store_media(name));
 
+drop policy if exists "store_media_member_delete" on storage.objects;
 create policy "store_media_member_delete" on storage.objects for delete to authenticated
   using (bucket_id = 'store-media' and public.can_write_store_media(name));

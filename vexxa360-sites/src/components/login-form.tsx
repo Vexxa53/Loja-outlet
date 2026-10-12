@@ -1,34 +1,34 @@
 "use client";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { requestPasswordReset, signIn } from "@/lib/actions/auth";
-import { initialState } from "@/lib/validation/common";
+import { useServerForm } from "@/lib/use-server-form";
 import { Alert, Field } from "./ui";
 import { SubmitButton } from "./submit-button";
 
 export function LoginForm({ next }: { next?: string }) {
   const [mode, setMode] = useState<"login" | "reset">("login");
   const [show, setShow] = useState(false);
-  const [state, action] = useActionState(signIn, initialState);
-  const [resetState, resetAction] = useActionState(requestPasswordReset, initialState);
+  const { state, onSubmit, pending } = useServerForm(signIn);
+  const { state: resetState, onSubmit: onReset, pending: pendingReset } = useServerForm(requestPasswordReset);
 
   if (mode === "reset") {
     return (
-      <form action={resetAction} className="space-y-4" noValidate>
+      <form onSubmit={onReset} className="space-y-4" noValidate>
         <p className="text-sm text-muted">Informe seu e-mail e enviaremos um link para criar uma nova senha.</p>
         <Field label="E-mail" name="email" error={resetState.fieldErrors?.email}>
           <input id="email" name="email" type="email" autoComplete="email" required className="field" />
         </Field>
         {resetState.error && <Alert kind="error">{resetState.error}</Alert>}
         {resetState.ok && <Alert kind="ok">{resetState.message}</Alert>}
-        <SubmitButton className="w-full" pendingText="Enviando…">Enviar link</SubmitButton>
+        <SubmitButton pending={pendingReset} className="w-full" pendingText="Enviando…">Enviar link</SubmitButton>
         <button type="button" className="w-full text-center text-sm text-muted underline" onClick={() => setMode("login")}>Voltar ao login</button>
       </form>
     );
   }
 
   return (
-    <form action={action} className="space-y-4" noValidate>
+    <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <input type="hidden" name="next" value={next ?? ""} />
       <Field label="E-mail" name="email" error={state.fieldErrors?.email}>
         <input id="email" name="email" type="email" autoComplete="username" required className="field" />
@@ -43,7 +43,7 @@ export function LoginForm({ next }: { next?: string }) {
         </div>
       </Field>
       {state.error && <Alert kind="error">{state.error}</Alert>}
-      <SubmitButton className="w-full" pendingText="Entrando…">Entrar</SubmitButton>
+      <SubmitButton pending={pending} className="w-full" pendingText="Entrando…">Entrar</SubmitButton>
       <button type="button" className="w-full text-center text-sm text-muted underline" onClick={() => setMode("reset")}>Esqueci minha senha</button>
     </form>
   );

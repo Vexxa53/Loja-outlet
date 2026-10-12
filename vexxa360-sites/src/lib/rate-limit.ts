@@ -13,3 +13,17 @@ export function rateLimit(key: string, limit: number, windowMs: number): boolean
   b.count += 1;
   return b.count <= limit;
 }
+
+/** Variante "só falhas": consulta sem consumir… */
+export function isRateLimited(key: string, limit: number): boolean {
+  const b = buckets.get(key);
+  return !!b && b.resetAt > Date.now() && b.count >= limit;
+}
+
+/** …e registra uma falha (usada no login: acertos não contam). */
+export function recordHit(key: string, windowMs: number): void {
+  const now = Date.now();
+  const b = buckets.get(key);
+  if (!b || b.resetAt <= now) buckets.set(key, { count: 1, resetAt: now + windowMs });
+  else b.count += 1;
+}
