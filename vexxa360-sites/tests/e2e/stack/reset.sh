@@ -19,6 +19,6 @@ delete from auth.users;
 SQL
 for f in ../../../supabase/migrations/*.sql; do $PSQL -f - < "$f" >/dev/null; done
 $PSQL -c "notify pgrst, 'reload schema'" >/dev/null
-$DC exec -T mail wget -qO- --method=DELETE http://localhost:8025/api/v1/messages >/dev/null 2>&1 || true
+curl -s -X DELETE http://127.0.0.1:54324/api/v1/messages >/dev/null 2>&1 || true   # limpa a caixa de e-mails de teste (Mailpit)
 sleep 2
 echo "banco de teste recriado"

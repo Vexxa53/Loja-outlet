@@ -19,7 +19,7 @@ async function login(page: Page, email: string, password = PW, expectOk = true) 
 /** goto + espera o streaming do React terminar (segmentos ocultos "S:n" são removidos logo após o swap). */
 async function go(page: Page, url: string) {
   const r = await page.goto(url);
-  await page.waitForFunction(() => !document.querySelector('[id^="S:"]'));
+  await page.waitForFunction(() => !document.querySelector('[id^="S:"]'), undefined, { timeout: 3000 }).catch(() => {});
   return r;
 }
 const alerts = (page: Page) => page.locator('[role="alert"]:not(#__next-route-announcer__)');
@@ -264,6 +264,11 @@ test.describe.serial("Vexxa360 Sites — fluxo comercial ponta a ponta", () => {
     // cor do lojista aplicada via variável CSS
     const brand = await page.locator("div.flex.min-h-screen").first().evaluate((el) => (el as HTMLElement).style.getPropertyValue("--brand"));
     expect(brand).toBe("#2a3a4a");
+    // as imagens (logo, banner, fotos) realmente carregam — não só aparecem no HTML
+    await page.waitForLoadState("networkidle");
+    const broken = await page.evaluate(() => [...document.images].filter((i) => !(i.complete && i.naturalWidth > 0)).map((i) => i.currentSrc || i.src));
+    expect(broken, "imagens quebradas na vitrine").toEqual([]);
+    expect(await page.locator("img").count()).toBeGreaterThanOrEqual(3);
     // custo de aquisição nunca vai para o HTML público
     const html = await page.content();
     expect(html).not.toContain("45,00"); expect(html).not.toContain("cost_price"); expect(html).not.toContain("45.00");
@@ -347,6 +352,8 @@ test.describe.serial("Vexxa360 Sites — fluxo comercial ponta a ponta", () => {
     expect(ld.offers.price).toBe("119.92");
     expect(ld.offers.availability).toContain("InStock");
     expect(JSON.stringify(ld)).not.toMatch(/aggregateRating|review/i);
+    await page.waitForLoadState("networkidle");
+    expect(await page.evaluate(() => [...document.images].filter((i) => !(i.complete && i.naturalWidth > 0)).length), "imagens quebradas no produto").toBe(0);
     expect(await page.locator('link[rel="canonical"]').getAttribute("href")).toContain("/loja/loja-a/produto/camiseta-linho");
     expect(await page.locator('meta[property="og:title"]').getAttribute("content")).toBe("Camiseta Linho");
   });
@@ -556,5 +563,237 @@ test.describe.serial("Vexxa360 Sites — fluxo comercial ponta a ponta", () => {
     expect(pub.json.every((p: any) => p.status === "published")).toBe(true);
     // nada foi alterado
     expect(psql(`select name from products where id='${productId}'`)).toBe("Camiseta Linho");
+  });
+
+  // ------------------------------------------------------------------ produtos: ações e upload inválido
+  test("produto: upload inválido é recusado; duplicar, despublicar, arquivar e excluir (com histórico → arquiva)", async ({ page }) => {
+    await login(page, OWNER_A);
+    await go(page, `/admin/produtos/${productId}`);
+    // arquivo de texto disfarçado de .jpg: o servidor confere os bytes e recusa
+    const fake = path.join(tmp, "falso.jpg"); writeFileSync(fake, "<?php system($_GET['x']); ?>");
+    await page.locator('input[type="file"]').setInputFiles(fake);
+    await page.getByRole("button", { name: "Salvar rascunho" }).click();
+    await expect(page.getByText(/algumas fotos falharam/).first()).toBeVisible();
+    await expect(page.getByText(/Formato não aceito/).first()).toBeVisible();
+    expect(psql(`select count(*) from product_images where product_id='${productId}'`)).toBe("2");
+    // (limite de 4 MB: imagens grandes são reduzidas no navegador; o teto no servidor está nos testes unitários)
+
+    await go(page, "/admin/produtos");
+    const menu = (name: string) => page.getByRole("row", { name: new RegExp(name) }).locator("summary");
+    // duplicar
+    await menu("Camiseta Linho").first().click();
+    await page.getByRole("button", { name: "Duplicar" }).click();
+    await expect(page.getByText("Produto duplicado como rascunho").first()).toBeVisible();
+    expect(psql("select count(*) from products where name='Camiseta Linho (cópia)' and status='draft'")).toBe("1");
+    expect(psql("select coalesce(sum(stock_quantity),0) from product_variants v join products p on p.id=v.product_id where p.name='Camiseta Linho (cópia)'")).toBe("0");
+    expect(psql("select count(*) from product_images i join products p on p.id=i.product_id where p.name='Camiseta Linho (cópia)'")).toBe("2");
+    // despublicar o original
+    await go(page, "/admin/produtos");
+    await page.getByRole("row", { name: /Camiseta Linho \(cópia\)/ }).locator("summary").click();
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("row", { name: /Camiseta Linho \(cópia\)/ }).getByRole("button", { name: "Excluir…" }).click();
+    await expect(page.getByText("Produto excluído.").first()).toBeVisible();
+    expect(psql("select count(*) from products where name='Camiseta Linho (cópia)'")).toBe("0");
+    expect(psql(`select count(*) from storage.objects where name like '${tenantA}/products/%'`)).toBe("2");     // fotos da cópia removidas do Storage
+
+    // excluir produto COM pedidos → vira arquivado, histórico preservado
+    await menu("Camiseta Linho").first().click();
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("row", { name: /Camiseta Linho/ }).first().getByRole("button", { name: "Excluir…" }).click();
+    await expect(page.getByText(/foi arquivado em vez de excluído/).first()).toBeVisible();
+    expect(psql(`select (archived_at is not null)::text||'|'||status from products where id='${productId}'`)).toBe("true|draft");
+    expect(psql("select count(*) from order_items where product_id is not null")).toBe("3");
+    await expect(go(page, "/loja/loja-a/produto/camiseta-linho").then((r) => r!.status())).resolves.toBe(404);   // arquivado some da loja
+    // restaurar e republicar
+    await go(page, "/admin/produtos?situacao=arquivados");
+    await menu("Camiseta Linho").first().click();
+    await page.getByRole("button", { name: "Restaurar" }).click();
+    await expect(page.getByText("Produto restaurado como rascunho.").first()).toBeVisible();
+    await go(page, "/admin/produtos?situacao=rascunhos");
+    await menu("Camiseta Linho").first().click();
+    await page.getByRole("button", { name: "Publicar" }).click();
+    await expect(page.getByText("Produto publicado.").first()).toBeVisible();
+    expect((await go(page, "/loja/loja-a/produto/camiseta-linho"))!.status()).toBe(200);
+  });
+
+  // ------------------------------------------------------------------ permissões (staff)
+  test("equipe (staff) opera pedidos/produtos, mas não vê custo nem altera configurações", async ({ page }) => {
+    const staffId = (await createUser("equipe-a@vexxa.test", PW)).id;
+    psql(`insert into memberships (tenant_id, user_id, role) values ('${tenantA}','${staffId}','staff')`);
+    await login(page, "equipe-a@vexxa.test");
+    await go(page, "/admin/pedidos");
+    await expect(page.getByRole("link", { name: "#1" })).toBeVisible();
+    await go(page, `/admin/produtos/${productId}`);
+    await expect(page.getByLabel("Nome do produto")).toBeVisible();
+    await expect(page.getByLabel("Custo de aquisição (R$)")).toHaveCount(0);      // custo oculto
+    await go(page, "/admin/configuracoes");
+    await expect(page).toHaveURL(/\/admin\?erro=permissao/);
+    await go(page, "/admin/promocoes");
+    await expect(page).toHaveURL(/\/admin\?erro=permissao/);
+    await expect(page.getByText("não tem permissão").first()).toBeVisible();
+    // staff nunca consegue custo/configuração/promoção pela API
+    const tok = await signInToken("equipe-a@vexxa.test", PW);
+    expect((await rest(tok, "GET", `product_costs?tenant_id=eq.${tenantA}`)).json).toEqual([]);
+    expect((await rest(tok, "PATCH", `store_settings?tenant_id=eq.${tenantA}`, { store_name: "x" })).json).toEqual([]);
+    expect((await rest(tok, "POST", "promotions", { tenant_id: tenantA, name: "x", discount_type: "percent", discount_value: 10, starts_at: new Date().toISOString(), ends_at: new Date(Date.now() + 1e6).toISOString() })).status).toBe(403);
+  });
+
+  // ------------------------------------------------------------------ publicação, senha e sessão
+  test("despublicar a loja a tira do ar; o lojista continua vendo a pré-visualização", async ({ page, request }) => {
+    await login(page, OWNER_A);
+    await go(page, "/admin/configuracoes");
+    await page.getByLabel(/Loja publicada/).uncheck();
+    await page.getByRole("button", { name: "Salvar configurações" }).click();
+    await expect(page.getByText("oculta do público").first()).toBeVisible();
+    expect((await request.get("/loja/loja-a")).status()).toBe(404);
+    expect((await request.get("/loja/loja-a/produto/camiseta-linho")).status()).toBe(404);
+    expect((await rest(null, "GET", `products?tenant_id=eq.${tenantA}&select=id`)).json).toEqual([]);   // nem pela API
+    await go(page, "/loja/loja-a");
+    await expect(page.getByText("não está publicada").first()).toBeVisible();
+    await go(page, "/admin/configuracoes");
+    await page.getByLabel(/Loja publicada/).check();
+    await page.getByRole("button", { name: "Salvar configurações" }).click();
+    await expect(page.getByText("A loja está publicada").first()).toBeVisible();
+    expect((await request.get("/loja/loja-a")).status()).toBe(200);
+  });
+
+  test("loja suspensa pelo master sai do ar (vitrine e painel)", async ({ page, request }) => {
+    await login(page, MASTER);
+    await go(page, "/master");
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("listitem").filter({ hasText: "Loja Teste A" }).getByRole("button", { name: "Suspender" }).click();
+    await expect(page.getByText(/Loja suspensa/).first()).toBeVisible();
+    expect((await request.get("/loja/loja-a")).status()).toBe(404);
+    await page.context().clearCookies();
+    await login(page, OWNER_A);
+    await go(page, "/admin");
+    await expect(page).toHaveURL(/\/sem-loja/);
+    psql("update tenants set status='active' where slug='loja-a'");
+    await go(page, "/admin");
+    await expect(page).toHaveURL(/\/admin$/);
+    expect((await request.get("/loja/loja-a")).status()).toBe(200);
+  });
+
+  test("recuperação de senha por e-mail, nova senha, logout e sessão encerrada", async ({ page }) => {
+    await go(page, "/login");
+    await page.getByRole("button", { name: "Esqueci minha senha" }).click();
+    // mesma mensagem para e-mail inexistente (não revela cadastro)
+    await page.locator("#email").fill("naoexiste@vexxa.test");
+    await page.getByRole("button", { name: "Enviar link" }).click();
+    await expect(page.getByText(/enviaremos um link/).first()).toBeVisible();
+    // (cada pedido troca o verificador PKCE do navegador: o link válido é sempre o do ÚLTIMO pedido)
+    await page.locator("#email").fill(OWNER_A);
+    await page.getByRole("button", { name: "Enviar link" }).click();
+    await expect(page.getByText(/enviaremos um link/).first()).toBeVisible();
+
+    const mail = await latestMail(OWNER_A);
+    const link = /https?:\/\/[^\s"<>]+verify[^\s"<>]+/.exec(mail.Text)?.[0].replace(/&amp;/g, "&");
+    expect(link, mail.Text).toBeTruthy();
+    await page.goto(link!);
+    await page.waitForURL(/\/auth\/redefinir/);
+    await page.locator("#password").fill("curta");
+    await page.locator("#confirm").fill("curta");
+    await page.getByRole("button", { name: "Salvar senha" }).click();
+    await expect(page.getByText(/ao menos 8 caracteres/).first()).toBeVisible();
+    await page.locator("#password").fill("Nova-Senha-456");
+    await page.locator("#confirm").fill("Outra-Senha-456");
+    await page.getByRole("button", { name: "Salvar senha" }).click();
+    await expect(page.getByText(/não conferem/).first()).toBeVisible();
+    await page.locator("#confirm").fill("Nova-Senha-456");
+    await page.getByRole("button", { name: "Salvar senha" }).click();
+    await page.waitForURL(/\/admin/);
+    await expect(page.getByText("Visão geral").first()).toBeVisible();
+
+    await logout(page);
+    expect((await page.goto("/admin"))!.url()).toContain("/login");           // sessão encerrada
+    await login(page, OWNER_A, PW, false);
+    await expect(alerts(page).first()).toContainText("E-mail ou senha incorretos");   // senha antiga não vale mais
+    await login(page, OWNER_A, "Nova-Senha-456");
+    await expect(page).toHaveURL(/\/admin$/);
+    // link de recuperação não é reutilizável
+    await page.context().clearCookies();
+    await page.goto(link!);
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  // ------------------------------------------------------------------ segurança geral e SEO
+  test("segredos não vazam; cabeçalhos de segurança; robots e sitemap", async ({ request }) => {
+    const root = path.resolve(__dirname, "../../.next");
+    const files: string[] = [];
+    const walk = (d: string) => { for (const f of readdirSync(d)) { const p = path.join(d, f); statSync(p).isDirectory() ? walk(p) : /\.(js|html|json|css|map|txt|rsc)$/.test(f) && files.push(p); } };
+    walk(path.join(root, "static")); walk(path.join(root, "server", "app"));
+    expect(files.length).toBeGreaterThan(20);
+    let hits = 0;
+    for (const f of files.filter((x) => x.includes("/static/") || x.endsWith(".html") || x.endsWith(".rsc"))) {
+      const c = readFileSync(f, "utf8");
+      if (c.includes(SERVICE) || /SUPABASE_SERVICE_ROLE_KEY/.test(c)) { hits++; console.log("VAZAMENTO em", f); }
+    }
+    expect(hits).toBe(0);
+    for (const u of ["/", "/login", "/loja/loja-a", "/loja/loja-a/produtos"]) {
+      const r = await request.get(u);
+      const body = await r.text();
+      expect(body, u).not.toContain(SERVICE);
+      expect(r.headers()["x-content-type-options"]).toBe("nosniff");
+      expect(r.headers()["x-frame-options"]).toBe("SAMEORIGIN");
+      expect(r.headers()["referrer-policy"]).toBeTruthy();
+      expect(r.headers()["x-powered-by"]).toBeUndefined();
+    }
+    const robots = await (await request.get("/robots.txt")).text();
+    expect(robots).toContain("Disallow: /admin");
+    expect(robots).toContain("sitemap.xml");
+    const sm = await (await request.get("/sitemap.xml")).text();
+    expect(sm).toContain("/loja/loja-a/produto/camiseta-linho");
+    expect(sm).not.toContain("loja-b");                                      // loja B não está publicada
+    expect(sm).not.toContain("/admin");
+  });
+
+  // ------------------------------------------------------------------ mobile
+  test("capturas desktop (revisão visual)", async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 900 });
+    mkdirSync(path.resolve(__dirname, "screens"), { recursive: true });
+    const shot = async (u: string, n: string, full = false) => { await go(page, u); await page.waitForLoadState("networkidle"); await page.screenshot({ path: path.resolve(__dirname, `screens/desktop-${n}.png`), fullPage: full }); };
+    await shot("/loja/loja-a", "vitrine", true);
+    await shot("/loja/loja-a/produtos", "catalogo");
+    await shot("/loja/loja-a/produto/camiseta-linho", "produto");
+    await login(page, OWNER_A, "Nova-Senha-456");
+    await shot("/admin", "painel");
+    await shot("/admin/produtos", "produtos");
+    await shot(`/admin/produtos/${productId}`, "produto-form", true);
+    await shot("/admin/pedidos", "pedidos");
+    await shot("/admin/estoque", "estoque");
+  });
+
+  test("layout mobile (390px): vitrine, produto, sacola e painel sem rolagem horizontal", async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    const page = await ctx.newPage();
+    mkdirSync(path.resolve(__dirname, "screens"), { recursive: true });
+    const noOverflow = async (name: string) => {
+      const w = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
+      expect(w.sw, `${name}: scrollWidth ${w.sw} > ${w.cw}`).toBeLessThanOrEqual(w.cw + 1);
+      await page.screenshot({ path: path.resolve(__dirname, `screens/${name}.png`), fullPage: false });
+    };
+    await go(page, "/loja/loja-a"); await noOverflow("mobile-vitrine");
+    await page.getByRole("button", { name: "Abrir menu" }).click();
+    await expect(page.getByRole("banner").getByRole("link", { name: "Todos os produtos" })).toBeVisible();
+    await go(page, "/loja/loja-a/produtos"); await noOverflow("mobile-catalogo");
+    await go(page, "/loja/loja-a/produto/camiseta-linho"); await noOverflow("mobile-produto");
+    await page.getByRole("button", { name: "Branca", exact: true }).click();
+    await page.getByRole("button", { name: "M", exact: true }).click();
+    await page.getByRole("button", { name: "Adicionar à sacola" }).click();
+    await go(page, "/loja/loja-a/sacola"); await noOverflow("mobile-sacola");
+    await go(page, "/login"); await noOverflow("mobile-login");
+    await page.locator("#email").fill(OWNER_A); await page.locator("#password").fill("Nova-Senha-456");
+    await page.getByRole("button", { name: "Entrar" }).click();
+    await page.waitForURL(/\/admin/);
+    await noOverflow("mobile-painel");
+    await page.getByRole("button", { name: "Abrir menu" }).click();
+    const drawer = page.getByRole("dialog");
+    await expect(drawer.getByRole("link", { name: "Produtos" })).toBeVisible();
+    await page.screenshot({ path: path.resolve(__dirname, "screens/mobile-painel-menu.png") });
+    await drawer.getByRole("link", { name: "Produtos" }).click();
+    await page.waitForURL(/\/admin\/produtos/);
+    await noOverflow("mobile-produtos-lista");
+    await go(page, `/admin/produtos/${productId}`); await noOverflow("mobile-produto-form");
+    await ctx.close();
   });
 });

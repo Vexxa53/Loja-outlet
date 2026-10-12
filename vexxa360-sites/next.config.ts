@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
-// Hostname do Supabase Storage liberado para o otimizador de imagens.
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseHost = supabaseUrl ? new URL(supabaseUrl).hostname : undefined;
+// Origem do Supabase Storage liberada para o otimizador de imagens (protocolo, host e porta vêm da URL do projeto).
+// Em produção é https://<ref>.supabase.co; no Supabase local é http://127.0.0.1:54321.
+const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL) : undefined;
+const isLocalSupabase = !!supabase && /^(localhost|127\.|\[::1\])/.test(supabase.hostname);
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -15,9 +16,16 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
-    remotePatterns: supabaseHost
-      ? [{ protocol: "https", hostname: supabaseHost, pathname: "/storage/v1/object/public/store-media/**" }]
+    remotePatterns: supabase
+      ? [{
+          protocol: supabase.protocol.replace(":", "") as "http" | "https",
+          hostname: supabase.hostname,
+          ...(supabase.port ? { port: supabase.port } : {}),
+          pathname: "/storage/v1/object/public/store-media/**",
+        }]
       : [],
+    // O otimizador bloqueia IPs privados; só liberamos quando o Supabase é local (desenvolvimento/testes).
+    dangerouslyAllowLocalIP: isLocalSupabase,
     formats: ["image/avif", "image/webp"],
   },
   experimental: {
