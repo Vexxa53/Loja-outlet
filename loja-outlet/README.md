@@ -92,3 +92,6 @@ Delegados ao provedor do banco: confirme no plano contratado (Supabase Free **n�
 - Publicação na Vercel, projeto Supabase (banco + bucket), credenciais Mercado Pago e Resend (e-mail de recuperação de senha) — dependem de autorização/credenciais do proprietário.
 - Cálculo de frete por transportadora; reembolso via API; rate limit por IP depende do cabeçalho `x-forwarded-for` da plataforma.
 - Otimização de imagens (hoje são servidas como enviadas, limite 4 MB) e tela de transferência de estoque em lote.
+
+
+Outlet 3k
