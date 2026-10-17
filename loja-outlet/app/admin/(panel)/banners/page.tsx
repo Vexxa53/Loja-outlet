@@ -18,7 +18,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ o
       <label className="block"><span className="label">Ordem</span><input name="position" type="number" defaultValue={b?.position ?? 0} className="input" /></label>
       <label className="block"><span className="label">{b ? "Substituir imagem" : "Imagem"}</span><input type="file" name="image" accept="image/jpeg,image/png,image/webp" className="input" /></label>
       <div className="flex items-center gap-2"><label className="flex items-center gap-1 text-sm"><input type="checkbox" name="active" defaultChecked={b?.active ?? true} /> Ativo</label><button className="btn">Salvar</button>{b && <button formAction={deleteBanner} formNoValidate className="btn btn-danger">Excluir</button>}</div>
-      {b && /* eslint-disable-next-line @next/next/no-img-element */ <img src={b.imageUrl} alt="" className="h-16 object-cover md:col-span-4" />}
+      {b &&   <img src={b.imageUrl} alt="" className="h-16 object-cover md:col-span-4" />}
     </form>
   );
   return (<div className="space-y-4"><h1 className="h-display text-2xl">Banners</h1><Flash ok={sp.ok} erro={sp.erro} />{form()}{banners.map((b) => form(b))}</div>);

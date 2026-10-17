@@ -74,8 +74,15 @@ export async function processPayment(paymentId: string): Promise<"processed" | "
     update: { status, method: p.payment_method_id },
   });
   await db.order.update({ where: { id: order.id }, data: { paymentStatus: status } });
-  if (status === "APPROVED") await changeOrderStatus(order.id, "PAID", "mercadopago", `Pagamento ${payment.externalId} aprovado`).catch(() => undefined);
-  if (status === "REJECTED" || status === "CANCELLED") await changeOrderStatus(order.id, "CANCELLED", "mercadopago", `Pagamento ${p.status}`).catch(() => undefined);
+  if (status === "APPROVED") {
+    // Pagamento aprovado depois de o pedido ter sido cancelado/expirado: não reativa sozinho; deixa aviso para o atendimento.
+    await changeOrderStatus(order.id, "PAID", "mercadopago", `Pagamento ${payment.externalId} aprovado`).catch(async () => {
+      if (order.status !== "PAID") {
+        await db.orderHistory.create({ data: { orderId: order.id, status: "ATENCAO", note: `Pagamento ${payment.externalId} aprovado com o pedido em ${order.status}: reembolsar ou reprocessar manualmente.`, actor: "mercadopago" } });
+      }
+    });
+  }
+  // Pagamento recusado NÃO cancela o pedido: o cliente pode tentar de novo; o cron expira pedidos não pagos em 48h.
   if (status === "REFUNDED") await changeOrderStatus(order.id, "REFUNDED", "mercadopago", "Estorno").catch(() => undefined);
   return "processed";
 }

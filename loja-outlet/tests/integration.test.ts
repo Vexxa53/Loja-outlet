@@ -118,6 +118,23 @@ d("fluxo de pedidos (PostgreSQL)", () => {
     await db.paymentEvent.deleteMany({ where: { eventKey: `${pid}:approved` } });
   });
 
+  it("webhook: pagamento recusado não cancela; aprovado depois paga o pedido", async () => {
+    await db.variant.update({ where: { id: variantId }, data: { stock: 10 } });
+    const o = await createOrderFromCart({ cartToken: await cartWith(1), customerId: null, input: input("retry") });
+    const orig = globalThis.fetch;
+    process.env.MP_ACCESS_TOKEN = "x";
+    const reply = (id: number, status: string) => (async () => new Response(JSON.stringify({ id, status, external_reference: o.id, transaction_amount: o.totalCents / 100 }))) as typeof fetch;
+    try {
+      globalThis.fetch = reply(71, "rejected");
+      await processPayment("71");
+      expect((await db.order.findUnique({ where: { id: o.id } }))!.status).toBe("PENDING");
+      globalThis.fetch = reply(72, "approved");
+      await processPayment("72");
+    } finally { globalThis.fetch = orig; }
+    expect((await db.order.findUnique({ where: { id: o.id } }))!.status).toBe("PAID");
+    await db.paymentEvent.deleteMany({ where: { eventKey: { in: ["71:rejected", "72:approved"] } } });
+  });
+
   it("webhook: valor divergente não aprova", async () => {
     await db.variant.update({ where: { id: variantId }, data: { stock: 10 } });
     const o = await createOrderFromCart({ cartToken: await cartWith(1), customerId: null, input: input("diverge") });

@@ -25,7 +25,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
       <Flash ok={sp.ok} erro={sp.erro} />
       <ProductForm p={p} />
       <section className="card space-y-3 p-4"><h2 className="font-bold uppercase">Imagens</h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">{p.images.map((i) => (<div key={i.id} className="space-y-1">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={i.url} alt={i.alt ?? ""} className="aspect-[3/4] w-full object-cover" />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">{p.images.map((i) => (<div key={i.id} className="space-y-1">{ }<img src={i.url} alt={i.alt ?? ""} className="aspect-[3/4] w-full object-cover" />
           <div className="flex gap-1 text-xs"><form action={moveImage}><input type="hidden" name="id" value={i.id} /><button name="dir" value="up" className="btn btn-ghost !px-2 !py-1">←</button><button name="dir" value="down" className="btn btn-ghost !px-2 !py-1">→</button></form>
             <form action={removeImage}><input type="hidden" name="id" value={i.id} /><button className="btn btn-danger !px-2 !py-1">Remover</button></form></div></div>))}</div>
         <form action={uploadProductImages} className="flex flex-wrap items-end gap-2"><input type="hidden" name="productId" value={p.id} /><div><label className="label" htmlFor="files">Enviar (JPG/PNG/WebP, até 4 MB)</label><input id="files" type="file" name="files" accept="image/jpeg,image/png,image/webp" multiple className="input" /></div><button className="btn">Enviar</button></form></section>

@@ -17,8 +17,8 @@ export async function Header() {
       <div className="bg-accent text-black text-center text-xs font-bold py-1 uppercase tracking-wider">
         Frete grátis acima de R$ {(s.shipping.freeAboveCents / 100).toFixed(0)} · {s.tagline}
       </div>
-      <div className="container-x flex items-center gap-4 py-3">
-        <Link href="/" className="h-display text-2xl tracking-tight">
+      <div className="container-x flex items-center gap-3 py-3 md:gap-4">
+        <Link href="/" className="h-display text-xl tracking-tight md:text-2xl">
           {s.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={s.logoUrl} alt={s.name} className="h-9 w-auto" />
@@ -29,7 +29,7 @@ export async function Header() {
         <form action="/produtos" className="hidden flex-1 md:block">
           <input name="q" placeholder="Buscar produtos..." className="input" aria-label="Buscar" />
         </form>
-        <nav className="ml-auto flex items-center gap-4 text-sm font-semibold uppercase">
+        <nav className="ml-auto flex items-center gap-3 text-xs font-semibold uppercase md:gap-4 md:text-sm">
           <Link href={customer ? "/conta" : "/conta/entrar"}>{customer ? "Minha conta" : "Entrar"}</Link>
           <Link href="/carrinho" className="relative">
             Carrinho

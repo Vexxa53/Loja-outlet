@@ -56,7 +56,7 @@ quem não tem a permissão é redirecionado para `/admin/sem-permissao`.
 
 ## Testes
 ```bash
-npm run typecheck
+npm run typecheck && npm run lint
 npm test                                  # unitários (sempre) 
 INTEGRATION=1 npm test                    # + integração com PostgreSQL (cria/limpa dados ITEST-*)
 npm run build && npx playwright test      # E2E (loja, conta, isolamento de dados, admin, permissões, mobile)
@@ -79,7 +79,7 @@ Delegados ao provedor do banco: confirme no plano contratado (Supabase Free **n�
 
 ## Regras de negócio relevantes
 - Frete: tabela própria por região do CEP (editável em Configurações) com frete grátis acima de um valor. **Não** há integração com transportadoras (Correios/Melhor Envio).
-- Pedido sem pagamento expira em 48 h (cron). Cancelar/reembolsar antes do envio repõe estoque uma única vez; reembolso financeiro é feito no painel do Mercado Pago.
+- Pagamento recusado não cancela o pedido (o cliente pode tentar de novo); pedido sem pagamento expira em 48 h (cron). Se um pagamento for aprovado depois da expiração, o pedido recebe um aviso "ATENCAO" no histórico para reembolso/reprocessamento manual. Cancelar/reembolsar antes do envio repõe estoque uma única vez; reembolso financeiro é feito no painel do Mercado Pago.
 - "Mais vendidos" usa somente pedidos pagos reais; sem vendas, a seção não aparece.
 
 ## Pendências
