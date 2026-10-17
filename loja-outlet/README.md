@@ -34,8 +34,13 @@ ADMIN_EMAIL=voce@dominio.com ADMIN_NAME="Seu Nome" npm run admin:create   # pede
 npm run dev                 # http://localhost:3000  ·  painel: /admin
 ```
 
-## Criação segura do primeiro administrador
-Não há senha padrão nem cadastro público de admin. O primeiro administrador é criado **somente por quem tem acesso ao banco**,
+## Criação segura do primeiro administrador (via navegador — recomendado)
+1. Defina `SETUP_TOKEN` (texto aleatório de 20+ caracteres) nas variáveis de ambiente da Vercel e faça o deploy.
+2. Abra `https://SEU-DOMINIO/admin/setup`, informe o `SETUP_TOKEN`, seu nome, e-mail e senha.
+3. A página só existe enquanto não houver administrador (depois responde 404). Remova `SETUP_TOKEN` da Vercel depois de usar.
+
+### Alternativa pelo terminal
+Não há senha padrão nem cadastro público de admin. Pelo terminal, o primeiro administrador é criado **somente por quem tem acesso ao banco**,
 rodando `npm run admin:create` com `DATABASE_URL` do ambiente desejado (a senha é digitada no terminal, sem eco, ≥10 caracteres,
 letras e números, e nunca é gravada em arquivo). Depois, o admin cria os demais usuários em **Admin → Usuários**.
 
@@ -66,7 +71,7 @@ O E2E espera o seed de demonstração e o admin `admin@teste.local` (veja `.gith
 ## Deploy (Vercel + Supabase)
 1. **Banco**: crie um projeto Supabase (ou Neon). `DATABASE_URL` = string do *pooler* (transaction, porta 6543, `?pgbouncer=true`); `DIRECT_URL` = conexão direta (5432).
 2. **Storage**: no Supabase, crie o bucket **público** `loja`. Use `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` (somente servidor; nunca `NEXT_PUBLIC_`).
-3. **Migrations** (manual, nunca automáticas em produção): `DATABASE_URL=… DIRECT_URL=… npx prisma migrate deploy` e `npm run db:seed`.
+3. **Migrations** (manual, nunca automáticas em produção). Sem terminal: cole o conteúdo de `supabase-schema.sql` no **Editor SQL** do Supabase e execute (somente na criação inicial). Com terminal: `DATABASE_URL=… DIRECT_URL=… npx prisma migrate deploy` e `npm run db:seed`.
 4. **Vercel**: *Add New Project* → repositório → **Root Directory = `loja-outlet`**. Variáveis: ver `.env.example`
    (`DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `BASE_URL`, `SUPABASE_*`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `RESEND_API_KEY`, `MAIL_FROM`, `CRON_SECRET`).
 5. **Mercado Pago**: configure o webhook `https://SEU-DOMINIO/api/webhooks/mercadopago` (evento *Pagamentos*) e copie a assinatura secreta para `MP_WEBHOOK_SECRET`. Teste com credenciais de teste antes de produção.
