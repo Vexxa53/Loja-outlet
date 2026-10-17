@@ -36,7 +36,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
             <td><form action={deleteVariant}><input type="hidden" name="id" value={v.id} /><input type="hidden" name="productId" value={p.id} /><button className="text-mute underline">Remover</button></form></td></tr>))}</tbody></table></div>
         <p className="text-xs text-mute">Para alterar quantidades use o módulo Estoque (gera histórico).</p>
         <form action={addVariant} className="grid gap-2 md:grid-cols-6"><input type="hidden" name="productId" value={p.id} />
-          <input name="color" placeholder="Cor" className="input" required /><input name="size" placeholder="Tam." className="input" required /><input name="sku" placeholder="SKU da variação" className="input" required />
+          <input name="color" placeholder="Cor" className="input" required /><input name="size" placeholder="Tam./Nº/Volume (P, 42, 100ml)" className="input" required /><input name="sku" placeholder="SKU da variação" className="input" required />
           <input name="stock" type="number" min={0} placeholder="Estoque inicial" defaultValue={0} className="input" /><input name="minStock" type="number" min={0} defaultValue={2} className="input" aria-label="Mínimo" /><button className="btn">Adicionar</button></form></section>
     </div>
   );

@@ -1,6 +1,7 @@
 // Cria perfis padrão (sempre) e, com SEED_DEMO=1, dados de demonstração (NUNCA usar em produção real).
 import { PrismaClient } from "@prisma/client";
 import { DEFAULT_ROLES } from "../lib/permissions";
+import { DEFAULT_CATEGORIES } from "../lib/default-categories";
 
 const db = new PrismaClient();
 
@@ -12,7 +13,8 @@ async function main() {
       update: r.name === "admin" ? { permissions: r.permissions, label: r.label } : { label: r.label }, // preserva ajustes feitos no painel
     });
   }
-  console.log("Perfis padrão garantidos.");
+  if ((await db.category.count()) === 0) await db.category.createMany({ data: DEFAULT_CATEGORIES, skipDuplicates: true });
+  console.log("Perfis e categorias padrão garantidos.");
   if (process.env.SEED_DEMO !== "1") return;
 
   const cat = await db.category.upsert({ where: { slug: "camisetas" }, update: {}, create: { name: "Camisetas", slug: "camisetas", position: 1 } });

@@ -25,8 +25,8 @@ export type StoreSettings = {
 };
 
 export const DEFAULT_SETTINGS: StoreSettings = {
-  name: "Giro Street",
-  tagline: "Streetwear com atitude",
+  name: "Outlet 3K",
+  tagline: "Grifes com preço de outlet",
   logoUrl: "",
   faviconUrl: "",
   accent: "#FFD400",
@@ -36,12 +36,12 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   instagram: "",
   facebook: "",
   tiktok: "",
-  about: "Roupas e streetwear para quem vive a cidade.",
+  about: "Outlet 3K: camisetas de grife, tênis, calças, relógios, acessórios e perfumes com preço de outlet.",
   privacyPolicy: "Tratamos seus dados conforme a LGPD. Para exercer seus direitos, acesse Minha conta > Privacidade.",
   termsPolicy: "Termos de uso da loja.",
   exchangePolicy: "Trocas e devoluções em até 7 dias após o recebimento (CDC).",
-  seoTitle: "Giro Street — Streetwear",
-  seoDescription: "Loja de roupas e streetwear.",
+  seoTitle: "Outlet 3K — Camisetas de grife, tênis, relógios e perfumes",
+  seoDescription: "Outlet 3K: moda de grife, tênis, calças, relógios, acessórios e perfumes com preço de outlet.",
   homeSections: { featured: "Destaques", news: "Novidades", bestSellers: "Mais vendidos", sale: "Ofertas" },
   shipping: DEFAULT_SHIPPING,
 };

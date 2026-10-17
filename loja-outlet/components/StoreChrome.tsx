@@ -23,7 +23,7 @@ export async function Header() {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={s.logoUrl} alt={s.name} className="h-9 w-auto" />
           ) : (
-            <>{s.name.split(" ")[0]}<span className="text-accent">{s.name.split(" ").slice(1).join(" ")}</span></>
+            <>{s.name.split(" ")[0]}{" "}<span className="text-accent">{s.name.split(" ").slice(1).join(" ")}</span></>
           )}
         </Link>
         <form action="/produtos" className="hidden flex-1 md:block">

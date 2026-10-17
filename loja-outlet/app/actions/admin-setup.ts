@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { hashPassword, passwordError } from "@/lib/auth";
 import { DEFAULT_ROLES } from "@/lib/permissions";
+import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 
 function tokenOk(given: string): boolean {
@@ -27,6 +28,7 @@ export async function createFirstAdmin(_: { error?: string } | undefined, fd: Fo
   for (const r of DEFAULT_ROLES) {
     await db.role.upsert({ where: { name: r.name }, create: { name: r.name, label: r.label, permissions: r.permissions, system: true }, update: {} });
   }
+  if ((await db.category.count()) === 0) await db.category.createMany({ data: DEFAULT_CATEGORIES, skipDuplicates: true });
   const role = await db.role.findUniqueOrThrow({ where: { name: "admin" } });
   await db.adminUser.create({ data: { email: p.data.email, name: p.data.name, passwordHash: await hashPassword(p.data.password), roleId: role.id } });
   redirect("/admin/login");
