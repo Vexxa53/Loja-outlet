@@ -72,6 +72,7 @@ O E2E espera o seed de demonstração e o admin `admin@teste.local` (veja `.gith
 1. **Banco**: crie um projeto Supabase (ou Neon). `DATABASE_URL` = string do *pooler* (transaction, porta 6543, `?pgbouncer=true`); `DIRECT_URL` = conexão direta (5432).
 2. **Storage**: no Supabase, crie o bucket **público** `loja`. Use `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` (somente servidor; nunca `NEXT_PUBLIC_`).
 3. **Migrations** (manual, nunca automáticas em produção). Sem terminal: cole o conteúdo de `supabase-schema.sql` no **Editor SQL** do Supabase e execute (somente na criação inicial). Com terminal: `DATABASE_URL=… DIRECT_URL=… npx prisma migrate deploy` e `npm run db:seed`.
+3b. **Segurança (obrigatório no Supabase)**: rode `supabase-security.sql` no SQL Editor — ele ativa RLS e remove o acesso das chaves públicas às tabelas (sem isso, dados de clientes ficam expostos pela API REST do Supabase). Repita após criar novas tabelas.
 4. **Vercel**: *Add New Project* → repositório → **Root Directory = `loja-outlet`**. Variáveis: ver `.env.example`
    (`DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `BASE_URL`, `SUPABASE_*`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `RESEND_API_KEY`, `MAIL_FROM`, `CRON_SECRET`).
 5. **Mercado Pago**: configure o webhook `https://SEU-DOMINIO/api/webhooks/mercadopago` (evento *Pagamentos*) e copie a assinatura secreta para `MP_WEBHOOK_SECRET`. Teste com credenciais de teste antes de produção.
