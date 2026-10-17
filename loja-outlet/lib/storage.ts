@@ -22,6 +22,11 @@ export function validateImage(file: File, buf: Buffer): string | null {
   return null;
 }
 
+/** Chaves novas (sb_secret_...) não são JWT: vão só em `apikey`. A chave legada (JWT) usa também Authorization. */
+function authHeaders(key: string): Record<string, string> {
+  return key.startsWith("sb_") ? { apikey: key } : { apikey: key, Authorization: `Bearer ${key}` };
+}
+
 export type Uploaded = { url: string; path: string };
 
 /** Envia a imagem ao Supabase Storage (bucket público) e devolve URL persistente. */
@@ -36,7 +41,7 @@ export async function uploadImage(file: File, folder: string): Promise<Uploaded>
   const path = `${folder.replace(/[^a-z0-9/_-]/gi, "")}/${randomUUID()}.${TYPES[file.type]}`;
   const res = await fetch(`${base}/storage/v1/object/${bucket}/${path}`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": file.type, "x-upsert": "false" },
+    headers: { ...authHeaders(key), "Content-Type": file.type, "x-upsert": "false" },
     body: new Uint8Array(buf),
   });
   if (!res.ok) throw new Error(`Falha no upload (${res.status}).`);
@@ -50,6 +55,6 @@ export async function deleteImage(path: string | null | undefined) {
   if (!path || !base || !key) return;
   await fetch(`${base}/storage/v1/object/${bucket}/${path}`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${key}` },
+    headers: authHeaders(key),
   }).catch(() => undefined);
 }
