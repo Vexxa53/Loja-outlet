@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0b0b0c;
+  --color-graphite: #1a1b1e;
+  --color-steel: #2a2c31;
+  --color-line: #3a3d44;
+  --color-mute: #9a9ea8;
+  --color-accent: var(--accent, #ffd400);
+  --font-display: "Archivo Black", "Impact", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html { background: var(--color-ink); color: #f4f4f5; }
+body { font-family: var(--font-sans); min-height: 100vh; display: flex; flex-direction: column; }
+main { flex: 1; }
+a { color: inherit; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .7rem 1.25rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .04em; font-size: .85rem; background: var(--color-accent); color: #000; border: 2px solid var(--color-accent); cursor: pointer; transition: transform .1s; }
+.btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: #fff; border-color: var(--color-line); }
+.btn-danger { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+.input { width: 100%; background: var(--color-graphite); border: 1px solid var(--color-line); color: #fff; padding: .6rem .75rem; font-size: .95rem; }
+.input:focus { outline: 2px solid var(--color-accent); outline-offset: 0; }
+.label { display: block; font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--color-mute); margin-bottom: .25rem; }
+.card { background: var(--color-graphite); border: 1px solid var(--color-steel); }
+.h-display { font-family: var(--font-display); text-transform: uppercase; letter-spacing: -.01em; }
+.container-x { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
+.tbl { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.tbl th { text-align: left; color: var(--color-mute); font-weight: 600; font-size: .75rem; text-transform: uppercase; padding: .6rem .75rem; border-bottom: 1px solid var(--color-line); white-space: nowrap; }
+.tbl td { padding: .6rem .75rem; border-bottom: 1px solid var(--color-steel); vertical-align: top; }
+.badge { display: inline-block; padding: .1rem .5rem; font-size: .7rem; font-weight: 700; text-transform: uppercase; background: var(--color-steel); }
+.badge-accent { background: var(--color-accent); color: #000; }
+.flash { padding: .6rem .9rem; border-left: 4px solid var(--color-accent); background: var(--color-steel); font-size: .9rem; }
+.flash-err { border-color: #ef4444; }

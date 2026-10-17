@@ -1,0 +1,40 @@
+name: loja-outlet CI
+on:
+  push:
+    paths: ["loja-outlet/**", ".github/workflows/loja-outlet-ci.yml"]
+  pull_request:
+    paths: ["loja-outlet/**"]
+defaults:
+  run:
+    working-directory: loja-outlet
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: postgres, POSTGRES_DB: loja }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/loja
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/loja
+      AUTH_SECRET: ci-secret-ci-secret-ci-secret-ci-secret
+      BASE_URL: http://localhost:3100
+      INTEGRATION: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: loja-outlet/package-lock.json }
+      - run: npm ci
+      - run: npx prisma migrate deploy
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build
+      - name: E2E (Playwright)
+        run: |
+          SEED_DEMO=1 npx tsx prisma/seed.ts
+          ADMIN_EMAIL=admin@teste.local ADMIN_PASSWORD=SenhaTeste123 npx tsx scripts/create-admin.ts
+          npx playwright install --with-deps chromium
+          npx playwright test
