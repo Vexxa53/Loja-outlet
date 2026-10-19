@@ -2,7 +2,7 @@ import { clearLimits } from "./limits";
 import { expect, test, type Page } from "@playwright/test";
 
 const WIDTHS = [320, 360, 375, 390, 430, 768, 1024, 1440];
-const STORE = ["/", "/produtos", "/produtos?q=moletom", "/produto/demo-mol-001", "/carrinho", "/checkout?cep=01310-100", "/conta/entrar", "/conta/cadastrar", "/politicas/privacidade"];
+const STORE = ["/", "/produtos", "/produtos?q=moletom", "/produto/moletom-basico-com-capuz-taupe", "/carrinho", "/checkout?cep=01310-100", "/conta/entrar", "/conta/cadastrar", "/politicas/privacidade"];
 const ADMIN = ["/admin", "/admin/produtos", "/admin/produtos/novo", "/admin/banners", "/admin/categorias", "/admin/estoque", "/admin/pedidos", "/admin/clientes", "/admin/cupons", "/admin/config", "/admin/usuarios", "/admin/auditoria"];
 
 const overflow = (p: Page) => p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -42,7 +42,7 @@ test("loja: sem rolagem horizontal em todas as larguras", async ({ page }) => {
 test("loja: alvos de toque confortáveis no celular", async ({ page }) => {
   const bad: string[] = [];
   await page.setViewportSize({ width: 375, height: 800 });
-  for (const path of ["/", "/produtos", "/produto/demo-mol-001", "/carrinho", "/conta/entrar"]) {
+  for (const path of ["/", "/produtos", "/produto/moletom-basico-com-capuz-taupe", "/carrinho", "/conta/entrar"]) {
     await page.goto(path);
     for (const t of await smallTargets(page)) bad.push(`${path}: ${t}`);
   }

@@ -1,4 +1,4 @@
-import { clearLimits } from "./limits";
+import { clearLimits, ensureTestData } from "./limits";
 import { expect, test } from "@playwright/test";
 
 const stamp = Date.now();
@@ -7,22 +7,23 @@ const emailB = `b${stamp}@example.com`;
 const pass = "SenhaForte123";
 
 test.beforeEach(clearLimits);
+test.beforeAll(ensureTestData);
 
 test("loja: navegação, filtros, carrinho, checkout e conta", async ({ page, browser }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: /Todos/ })).toBeVisible();
   await page.goto("/produtos?q=moletom");
-  await expect(page.getByText("Moletom Canguru Amarelo")).toBeVisible();
-  await expect(page.getByText("Camiseta Oversized Preta")).toHaveCount(0);
+  await expect(page.getByText("Moletom Básico com Capuz Taupe")).toBeVisible();
+  await expect(page.getByText("Camiseta Oversized Branca")).toHaveCount(0);
   await page.goto("/produtos?promo=1&ordem=menor");
   await expect(page.getByText(/produto\(s\) encontrado/)).toBeVisible();
 
-  await page.goto("/produto/demo-mol-001");
+  await page.goto("/produto/moletom-basico-com-capuz-taupe");
   await page.getByRole("button", { name: "M", exact: true }).click();
   await page.getByRole("button", { name: "Adicionar ao carrinho" }).click();
   await expect(page.getByRole("status")).toContainText("Adicionado");
   await page.goto("/carrinho");
-  await expect(page.getByText("Moletom Canguru Amarelo")).toBeVisible();
+  await expect(page.getByText("Moletom Básico com Capuz Taupe")).toBeVisible();
   await page.getByLabel("Cupom").fill("BEMVINDO10");
   await page.getByRole("button", { name: "Aplicar" }).click();
   await expect(page.getByText("Desconto")).toBeVisible();
@@ -79,7 +80,7 @@ test("loja: navegação, filtros, carrinho, checkout e conta", async ({ page, br
 test("mobile: página inicial sem rolagem horizontal", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 800 } });
   const p = await ctx.newPage();
-  for (const path of ["/", "/produtos", "/produto/demo-mol-001", "/carrinho"]) {
+  for (const path of ["/", "/produtos", "/produto/moletom-basico-com-capuz-taupe", "/carrinho"]) {
     await p.goto(path);
     const overflow = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, path).toBeLessThanOrEqual(0);

@@ -73,7 +73,7 @@ export async function searchCatalog(sp: CatalogQuery) {
 
 export async function facets() {
   const [categories, variants] = await Promise.all([
-    db.category.findMany({ where: { active: true }, orderBy: { position: "asc" } }),
+    db.category.findMany({ where: { active: true, products: { some: live } }, orderBy: { position: "asc" } }),
     db.variant.findMany({ where: { active: true, product: { status: { in: ["PUBLISHED", "UNAVAILABLE"] } } }, select: { size: true, color: true }, distinct: ["size", "color"] }),
   ]);
   return { categories, sizes: [...new Set(variants.map((v) => v.size))], colors: [...new Set(variants.map((v) => v.color))] };

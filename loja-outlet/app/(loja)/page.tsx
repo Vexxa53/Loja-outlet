@@ -9,7 +9,7 @@ export default async function Home() {
   const [s, banners, cats, featured, news, sale, best] = await Promise.all([
     getSettings(),
     db.banner.findMany({ where: { active: true }, orderBy: { position: "asc" } }),
-    db.category.findMany({ where: { active: true }, orderBy: { position: "asc" } }),
+    db.category.findMany({ where: { active: true, products: { some: { status: { in: ["PUBLISHED", "UNAVAILABLE"] } } } }, orderBy: { position: "asc" } }),
     listFor({ featured: true }),
     listFor({ isNew: true }),
     listFor({ promoPriceCents: { not: null } }, 8, { updatedAt: "desc" }),
@@ -20,9 +20,9 @@ export default async function Home() {
   const slides: Slide[] = hero.length
     ? hero.map((b) => ({ id: b.id, title: b.title, subtitle: b.subtitle, ctaLabel: b.ctaLabel, link: b.link, imageUrl: b.imageUrl, mobileImageUrl: b.mobileImageUrl, device: b.device }))
     : [
-        { id: "d1", title: s.name, subtitle: "Camisetas de grife e calças com preço de outlet.", ctaLabel: "Ver roupas", link: "/produtos?categoria=camisetas-de-grife" },
+        { id: "d1", title: s.name, subtitle: "Camisas, calças, jaquetas e muito mais com preço de outlet.", ctaLabel: "Ver roupas", link: "/produtos?categoria=camisas" },
         { id: "d2", title: "Tênis em oferta", subtitle: "Os modelos que você procura, com desconto de verdade.", ctaLabel: "Ver tênis", link: "/produtos?categoria=tenis" },
-        { id: "d3", title: "Relógios, acessórios e perfumes", subtitle: "Complete o visual com grife e preço baixo.", ctaLabel: "Ver novidades", link: "/produtos?categoria=relogios" },
+        { id: "d3", title: "Relógios para todo estilo", subtitle: "Complete o visual com um relógio.", ctaLabel: "Ver novidades", link: "/produtos?categoria=relogios" },
       ];
   const secondary = banners.filter((b) => b.placement === "secondary").slice(0, 3);
   return (

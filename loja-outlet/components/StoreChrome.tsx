@@ -7,7 +7,7 @@ import { getCartToken } from "@/lib/cart";
 export async function Header() {
   const [s, customer, token, cats] = await Promise.all([
     getSettings(), getCustomer(), getCartToken(),
-    db.category.findMany({ where: { active: true }, orderBy: { position: "asc" }, take: 8 }),
+    db.category.findMany({ where: { active: true, products: { some: { status: { in: ["PUBLISHED", "UNAVAILABLE"] } } } }, orderBy: { position: "asc" }, take: 8 }),
   ]);
   const count = token
     ? (await db.cartItem.aggregate({ where: { cart: { token } }, _sum: { quantity: true } }))._sum.quantity ?? 0
@@ -18,7 +18,7 @@ export async function Header() {
         Frete grátis acima de R$ {(s.shipping.freeAboveCents / 100).toFixed(0)} · {s.tagline}
       </div>
       <div className="container-x flex items-center gap-3 py-3 md:gap-4">
-        <Link href="/" className="h-display inline-flex min-h-11 items-center text-xl tracking-tight md:text-2xl">
+        <Link href="/" className="h-display inline-flex min-h-11 items-center gap-[0.3em] text-xl tracking-tight md:text-2xl">
           {s.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={s.logoUrl} alt={s.name} className="h-9 w-auto" />

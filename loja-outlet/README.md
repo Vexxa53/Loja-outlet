@@ -53,6 +53,14 @@ letras e números, e nunca é gravada em arquivo). Depois, o admin cria os demai
   exibir em *computador / celular / ambos*, ativar/desativar e excluir (com confirmação). Sem banner ativo, a loja mostra 3 slides padrão.
 - Tudo grava no **mesmo banco** que a loja lê (páginas sempre dinâmicas): salvar no painel reflete na loja imediatamente.
 
+### Catálogo inicial (demonstração)
+`Admin → Produtos → Instalar catálogo inicial` cadastra **35 produtos de exemplo** (8 camisas, 8 calças, 8 tênis, 8 blusas e jaquetas, 3 relógios) com
+nomes genéricos (sem marcas), descrições, preços em R$, tamanhos, 1 cor, estoque e **uma foto própria por produto**. É idempotente: pode ser repetido sem duplicar
+(SKU `OUT3K-...`) e **não sobrescreve** o que você editar. Os produtos aparecem no painel com o selo "Exemplo". Fotos e produtos são **ilustrativos**
+(veja `catalog/CREDITS.md`): troque tudo pelos reais, ou use *Colocar todos como Inativos* / *Remover catálogo inicial* antes de vender.
+Também via terminal: `SEED_CATALOG=1 npm run db:seed`. As fotos ficam em `public/catalogo/` (empacotadas com o deploy); ao instalar pelo painel elas são
+enviadas ao armazenamento de imagens configurado (Supabase) e passam a seguir o mesmo ciclo de qualquer foto enviada por você.
+
 ### Tamanhos de imagem recomendados
 | Uso | Tamanho | Proporção |
 |---|---|---|
@@ -90,7 +98,7 @@ INTEGRATION=1 npm test                    # + integração com PostgreSQL (cria/
 npm run build && STORAGE_DRIVER=local npx next start -p 3100 &  # servidor de teste
 npx playwright test                       # E2E com arquivos reais: produto/upload/banners, loja, permissões, responsividade (320–1440 px)
 ```
-O E2E espera o seed de demonstração e o admin `admin@teste.local` (veja `.github/workflows/loja-outlet-ci.yml`). Use **apenas banco de teste**.
+O E2E espera o catálogo inicial (`SEED_CATALOG=1 npm run db:seed`) e o admin `admin@teste.local` (veja `.github/workflows/loja-outlet-ci.yml`). Use **apenas banco de teste**.
 
 ## Deploy (Vercel + Supabase)
 1. **Banco**: crie um projeto Supabase (ou Neon). `DATABASE_URL` = string do *pooler* (transaction, porta 6543, `?pgbouncer=true`); `DIRECT_URL` = conexão direta (5432).
