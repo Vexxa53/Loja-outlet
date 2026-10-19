@@ -40,13 +40,20 @@ test("loja: navegação, filtros, carrinho, checkout e conta", async ({ page, br
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page).toHaveURL(/\/conta$/);
 
-  // checkout
+  // checkout em etapas (mantém os dados entre as etapas)
   await page.goto("/checkout?cep=01310-100");
+  await page.getByLabel("Telefone (opcional)").fill("11999999999");
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await expect(page.getByText(/Entrega padrão|Frete/).first()).toBeVisible();
   await page.getByLabel("Rua", { exact: true }).fill("Av Paulista");
   await page.getByLabel("Número", { exact: true }).fill("1000");
   await page.getByLabel("Bairro", { exact: true }).fill("Bela Vista");
   await page.getByLabel("Cidade", { exact: true }).fill("São Paulo");
   await page.getByLabel("UF", { exact: true }).fill("SP");
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await page.getByRole("radio").first().check();
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await expect(page.getByText("Av Paulista, 1000")).toBeVisible();
   await page.getByRole("button", { name: "Confirmar pedido" }).click();
   await expect(page).toHaveURL(/\/pedido\/.+/);
   const orderUrl = page.url();

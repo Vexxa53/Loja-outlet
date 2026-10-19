@@ -3,6 +3,7 @@ import { db } from "./db";
 import { moveStock, StockError } from "./stock";
 import { effectivePrice, evaluateCoupon, quoteShipping, type CouponRule } from "./pricing";
 import { getSettings } from "./settings";
+import { METHODS } from "./payments/types";
 
 export const checkoutSchema = z.object({
   name: z.string().trim().min(3).max(120),
@@ -16,6 +17,8 @@ export const checkoutSchema = z.object({
   city: z.string().trim().min(2).max(80),
   state: z.string().trim().length(2).toUpperCase(),
   idempotencyKey: z.string().min(16).max(80),
+  paymentMethod: z.enum(METHODS).optional(),
+  installments: z.coerce.number().int().min(1).max(12).optional(),
 });
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 
@@ -76,6 +79,7 @@ export async function createOrderFromCart(p: { cartToken: string; customerId: st
         shippingCents: ship.priceCents,
         totalCents: subtotal - discount + ship.priceCents,
         couponCode: coupon ? cart.couponCode : null,
+        paymentMethod: p.input.paymentMethod ?? null,
         shippingMethod: ship.label,
         shipZip: p.input.zip.replace(/\D/g, ""),
         shipStreet: p.input.street,

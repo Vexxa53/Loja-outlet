@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { Flash } from "@/components/Flash";
@@ -12,7 +13,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ o
   const f = (name: string, label: string, def: string) => (<div><label className="label" htmlFor={name}>{label}</label><input id={name} name={name} defaultValue={def} className="input" /></div>);
   const t = (name: string, label: string, def: string) => (<div><label className="label" htmlFor={name}>{label}</label><textarea id={name} name={name} defaultValue={def} rows={4} className="input" /></div>);
   return (
-    <div className="space-y-4"><h1 className="h-display text-2xl">Configurações da loja</h1><Flash ok={sp.ok} erro={sp.erro} />
+    <div className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-2"><h1 className="h-display text-2xl">Configurações da loja</h1><Link href="/admin/config/pagamentos" className="btn btn-ghost">Pagamentos →</Link></div><Flash ok={sp.ok} erro={sp.erro} />
       <form action={saveStoreSettings} className="card space-y-5 p-4">
         <div className="grid gap-3 md:grid-cols-3">{f("name", "Nome da loja", s.name)}{f("tagline", "Slogan (faixa superior)", s.tagline)}{f("accent", "Cor de destaque (#RRGGBB)", s.accent)}
           <label className="block"><span className="label">Logotipo {s.logoUrl && "(enviado)"}</span><input type="file" name="logo" accept="image/jpeg,image/png,image/webp" className="input" /></label>
