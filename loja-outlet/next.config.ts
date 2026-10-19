@@ -4,6 +4,8 @@ const supabaseHost = process.env.SUPABASE_URL ? new URL(process.env.SUPABASE_URL
 
 const config: NextConfig = {
   poweredByHeader: false,
+  // as fotos do catálogo inicial precisam existir no bundle da função para o instalador ler do disco
+  outputFileTracingIncludes: { "/admin/produtos": ["./public/catalogo/**/*"] },
   experimental: { serverActions: { bodySizeLimit: "5mb" } },
   images: {
     remotePatterns: [

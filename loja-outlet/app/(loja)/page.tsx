@@ -9,20 +9,20 @@ export default async function Home() {
   const [s, banners, cats, featured, news, sale, best] = await Promise.all([
     getSettings(),
     db.banner.findMany({ where: { active: true }, orderBy: { position: "asc" } }),
-    db.category.findMany({ where: { active: true }, orderBy: { position: "asc" } }),
+    db.category.findMany({ where: { active: true, products: { some: { status: { in: ["PUBLISHED", "UNAVAILABLE"] } } } }, orderBy: { position: "asc" } }),
     listFor({ featured: true }),
     listFor({ isNew: true }),
     listFor({ promoPriceCents: { not: null } }, 8, { updatedAt: "desc" }),
     bestSellers(8),
   ]);
-  const hero = banners.filter((b) => b.placement === "hero").slice(0, 5);
+  const hero = banners.filter((b) => b.placement === "hero").slice(0, 6);
   // Sem banners cadastrados no painel, mostra 3 slides padrão (sem imagem) com as categorias da loja.
   const slides: Slide[] = hero.length
-    ? hero.map((b) => ({ id: b.id, title: b.title, subtitle: b.subtitle, ctaLabel: b.ctaLabel, link: b.link, imageUrl: b.imageUrl }))
+    ? hero.map((b) => ({ id: b.id, title: b.title, subtitle: b.subtitle, ctaLabel: b.ctaLabel, link: b.link, imageUrl: b.imageUrl, mobileImageUrl: b.mobileImageUrl, device: b.device }))
     : [
-        { id: "d1", title: s.name, subtitle: "Camisetas de grife e calças com preço de outlet.", ctaLabel: "Ver roupas", link: "/produtos?categoria=camisetas-de-grife" },
+        { id: "d1", title: s.name, subtitle: "Camisas, calças, jaquetas e muito mais com preço de outlet.", ctaLabel: "Ver roupas", link: "/produtos?categoria=camisas" },
         { id: "d2", title: "Tênis em oferta", subtitle: "Os modelos que você procura, com desconto de verdade.", ctaLabel: "Ver tênis", link: "/produtos?categoria=tenis" },
-        { id: "d3", title: "Relógios, acessórios e perfumes", subtitle: "Complete o visual com grife e preço baixo.", ctaLabel: "Ver novidades", link: "/produtos?categoria=relogios" },
+        { id: "d3", title: "Relógios para todo estilo", subtitle: "Complete o visual com um relógio.", ctaLabel: "Ver novidades", link: "/produtos?categoria=relogios" },
       ];
   const secondary = banners.filter((b) => b.placement === "secondary").slice(0, 3);
   return (
@@ -31,9 +31,12 @@ export default async function Home() {
       {secondary.length > 0 && (
         <section className="container-x grid gap-4 py-8 md:grid-cols-3">
           {secondary.map((b) => (
-            <Link key={b.id} href={b.link || "/produtos"} className="group relative block aspect-[16/10] overflow-hidden card">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={b.imageUrl} alt={b.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            <Link key={b.id} href={b.link || "/produtos"} className={`group relative aspect-[16/10] overflow-hidden card ${b.device === "desktop" ? "hidden md:block" : b.device === "mobile" ? "block md:hidden" : "block"}`}>
+              <picture>
+                {b.mobileImageUrl && <source media="(max-width: 767px)" srcSet={b.mobileImageUrl} />}
+                { }
+                <img src={b.imageUrl} alt={b.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              </picture>
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
               <p className="absolute bottom-3 left-4 h-display text-xl">{b.title}</p>
             </Link>

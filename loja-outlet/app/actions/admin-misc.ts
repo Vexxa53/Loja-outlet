@@ -147,32 +147,90 @@ export async function toggleCoupon(fd: FormData) {
 }
 
 // ---------- banners ----------
-export async function saveBanner(fd: FormData) {
+const imageRef = z.string().max(600).refine((u) => u === "" || /^\/uploads\//.test(u) || /^https:\/\//.test(u), "Endereço de imagem inválido.");
+
+const bannerSchema = z.object({
+  title: z.string().trim().min(2, "Informe o título do banner.").max(120),
+  subtitle: z.string().max(200).optional(),
+  ctaLabel: z.string().max(40).optional(),
+  link: z.string().max(300).optional(),
+  placement: z.enum(["hero", "secondary"]),
+  device: z.enum(["all", "desktop", "mobile"]),
+  imageUrl: imageRef, imagePath: z.string().max(300).optional(),
+  mobileImageUrl: imageRef.optional(), mobileImagePath: z.string().max(300).optional(),
+});
+
+export type BannerState = { ok: boolean; error?: string };
+
+/** Cria ou atualiza um banner. As imagens já foram enviadas (com progresso) pelo formulário; aqui só gravamos as referências. */
+export async function saveBannerAction(fd: FormData): Promise<BannerState> {
   const admin = await requireAdmin("content.write");
   const id = String(fd.get("id") ?? "");
-  const p = z.object({ title: z.string().trim().min(2).max(120), subtitle: z.string().max(200).optional(), ctaLabel: z.string().max(40).optional(), link: z.string().max(300).optional(), placement: z.enum(["hero", "secondary"]) }).safeParse(Object.fromEntries(fd));
-  if (!p.success) go("/admin/banners", "Dados inválidos.", true);
-  if (p.data!.link && !/^(\/|https?:\/\/)/.test(p.data!.link)) go("/admin/banners", "Link deve começar com / ou https://", true);
+  const p = bannerSchema.safeParse(Object.fromEntries(fd));
+  if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? "Verifique os campos do banner." };
+  const d = p.data;
+  if (!d.imageUrl) return { ok: false, error: "Envie a imagem do banner antes de salvar." };
+  if (d.link && !/^(\/|https:\/\/)/.test(d.link)) return { ok: false, error: "O link deve começar com / (página da loja) ou https://" };
+  const data = {
+    title: d.title, subtitle: d.subtitle || null, ctaLabel: d.ctaLabel || null, link: d.link || null, placement: d.placement, device: d.device,
+    imageUrl: d.imageUrl, imagePath: d.imagePath || null, mobileImageUrl: d.mobileImageUrl || null, mobileImagePath: d.mobileImagePath || null,
+    active: fd.get("active") === "on",
+  };
   try {
-    const up = await optionalUpload(fd, "image", "banners");
-    if (!id && !up) go("/admin/banners", "Envie a imagem do banner.", true);
-    const data = { ...p.data!, subtitle: p.data!.subtitle || null, ctaLabel: p.data!.ctaLabel || null, link: p.data!.link || null, position: Number(fd.get("position")) || 0, active: fd.get("active") === "on" };
     if (id) {
-      const old = up ? await db.banner.findUnique({ where: { id } }) : null;
-      await db.banner.update({ where: { id }, data: { ...data, ...(up ? { imageUrl: up.url } : {}) } });
-      if (old) await deleteImage(old.imageUrl.split("/public/")[1]?.split("/").slice(1).join("/"));
-    } else await db.banner.create({ data: { ...data, imageUrl: up!.url } });
-    await audit(admin.id, id ? "banner.update" : "banner.create", "Banner", id || null);
-  } catch (e) { if (typeof e === "object" && e && "digest" in e) throw e; go("/admin/banners", e instanceof Error ? e.message : "Falha ao salvar.", true); }
-  refresh(); go("/admin/banners", "Banner salvo.");
+      const old = await db.banner.findUnique({ where: { id } });
+      if (!old) return { ok: false, error: "Banner não encontrado." };
+      await db.banner.update({ where: { id }, data });
+      // apaga do armazenamento as imagens que foram substituídas
+      if (old.imagePath && old.imagePath !== data.imagePath) await deleteImage(old.imagePath);
+      if (old.mobileImagePath && old.mobileImagePath !== data.mobileImagePath) await deleteImage(old.mobileImagePath);
+      await audit(admin.id, "banner.update", "Banner", id);
+    } else {
+      const last = await db.banner.aggregate({ where: { placement: d.placement }, _max: { position: true } });
+      const b = await db.banner.create({ data: { ...data, position: (last._max.position ?? 0) + 1 } });
+      await audit(admin.id, "banner.create", "Banner", b.id);
+    }
+  } catch (e) {
+    console.error("saveBanner", e instanceof Error ? e.message : "erro");
+    return { ok: false, error: "Não foi possível salvar o banner. Tente novamente." };
+  }
+  refresh();
+  return { ok: true };
 }
 
 export async function deleteBanner(fd: FormData) {
   const admin = await requireAdmin("content.write");
   const id = String(fd.get("id"));
+  const b = await db.banner.findUnique({ where: { id } });
+  if (!b) go("/admin/banners", "Banner não encontrado.", true);
   await db.banner.delete({ where: { id } });
+  await deleteImage(b!.imagePath); await deleteImage(b!.mobileImagePath);
   await audit(admin.id, "banner.delete", "Banner", id);
   refresh(); go("/admin/banners", "Banner excluído.");
+}
+
+export async function toggleBanner(fd: FormData) {
+  const admin = await requireAdmin("content.write");
+  const id = String(fd.get("id"));
+  const b = await db.banner.findUnique({ where: { id } });
+  if (!b) go("/admin/banners", "Banner não encontrado.", true);
+  await db.banner.update({ where: { id }, data: { active: !b!.active } });
+  await audit(admin.id, "banner.toggle", "Banner", id, { active: !b!.active });
+  refresh(); go("/admin/banners", b!.active ? "Banner desativado: não aparece mais na loja." : "Banner ativado: já aparece na loja.");
+}
+
+export async function moveBanner(fd: FormData) {
+  const admin = await requireAdmin("content.write");
+  const id = String(fd.get("id")); const dir = String(fd.get("dir")) === "up" ? -1 : 1;
+  const b = await db.banner.findUnique({ where: { id } });
+  if (!b) return;
+  const all = await db.banner.findMany({ where: { placement: b.placement }, orderBy: [{ position: "asc" }, { id: "asc" }] });
+  const i = all.findIndex((x) => x.id === id); const j = i + dir;
+  if (j < 0 || j >= all.length) return go("/admin/banners");
+  [all[i], all[j]] = [all[j], all[i]];
+  await db.$transaction(all.map((x, k) => db.banner.update({ where: { id: x.id }, data: { position: k + 1 } })));
+  await audit(admin.id, "banner.reorder", "Banner", id);
+  refresh(); go("/admin/banners", "Ordem atualizada.");
 }
 
 // ---------- configurações ----------

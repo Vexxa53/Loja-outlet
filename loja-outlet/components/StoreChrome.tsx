@@ -7,7 +7,7 @@ import { getCartToken } from "@/lib/cart";
 export async function Header() {
   const [s, customer, token, cats] = await Promise.all([
     getSettings(), getCustomer(), getCartToken(),
-    db.category.findMany({ where: { active: true }, orderBy: { position: "asc" }, take: 8 }),
+    db.category.findMany({ where: { active: true, products: { some: { status: { in: ["PUBLISHED", "UNAVAILABLE"] } } } }, orderBy: { position: "asc" }, take: 8 }),
   ]);
   const count = token
     ? (await db.cartItem.aggregate({ where: { cart: { token } }, _sum: { quantity: true } }))._sum.quantity ?? 0
@@ -18,7 +18,7 @@ export async function Header() {
         Frete grátis acima de R$ {(s.shipping.freeAboveCents / 100).toFixed(0)} · {s.tagline}
       </div>
       <div className="container-x flex items-center gap-3 py-3 md:gap-4">
-        <Link href="/" className="h-display text-xl tracking-tight md:text-2xl">
+        <Link href="/" className="h-display inline-flex min-h-11 items-center gap-[0.3em] text-xl tracking-tight md:text-2xl">
           {s.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={s.logoUrl} alt={s.name} className="h-9 w-auto" />
@@ -30,18 +30,18 @@ export async function Header() {
           <input name="q" placeholder="Buscar produtos..." className="input" aria-label="Buscar" />
         </form>
         <nav className="ml-auto flex items-center gap-3 text-xs font-semibold uppercase md:gap-4 md:text-sm">
-          <Link href={customer ? "/conta" : "/conta/entrar"}>{customer ? "Minha conta" : "Entrar"}</Link>
-          <Link href="/carrinho" className="relative">
+          <Link href={customer ? "/conta" : "/conta/entrar"} className="inline-flex min-h-11 items-center">{customer ? "Minha conta" : "Entrar"}</Link>
+          <Link href="/carrinho" className="relative inline-flex min-h-11 items-center">
             Carrinho
             <span className="ml-1 rounded-full bg-accent px-2 py-0.5 text-xs text-black" aria-label={`${count} itens`}>{count}</span>
           </Link>
         </nav>
       </div>
       <div className="border-t border-steel">
-        <nav className="container-x flex gap-5 overflow-x-auto py-2 text-sm font-semibold uppercase whitespace-nowrap">
-          <Link href="/produtos" className="hover:text-accent">Todos</Link>
-          {cats.map((c) => <Link key={c.id} href={`/produtos?categoria=${c.slug}`} className="hover:text-accent">{c.name}</Link>)}
-          <Link href="/produtos?promo=1" className="text-accent">Ofertas</Link>
+        <nav className="container-x flex gap-5 overflow-x-auto text-sm font-semibold uppercase whitespace-nowrap">
+          <Link href="/produtos" className="inline-flex min-h-11 items-center hover:text-accent">Todos</Link>
+          {cats.map((c) => <Link key={c.id} href={`/produtos?categoria=${c.slug}`} className="inline-flex min-h-11 items-center hover:text-accent">{c.name}</Link>)}
+          <Link href="/produtos?promo=1" className="inline-flex min-h-11 items-center text-accent">Ofertas</Link>
         </nav>
       </div>
       <form action="/produtos" className="container-x pb-2 md:hidden">
@@ -60,12 +60,12 @@ export async function Footer() {
         <div><p className="h-display text-xl">{s.name}</p><p className="mt-2 text-sm text-mute">{s.about}</p></div>
         <div className="text-sm"><p className="label">Contato</p>{s.contactEmail && <p>{s.contactEmail}</p>}{s.contactPhone && <p>{s.contactPhone}</p>}{s.address && <p className="text-mute">{s.address}</p>}</div>
         <div className="text-sm space-y-1"><p className="label">Institucional</p>
-          <p><Link href="/politicas/privacidade">Privacidade</Link></p>
-          <p><Link href="/politicas/trocas">Trocas e devoluções</Link></p>
-          <p><Link href="/politicas/termos">Termos de uso</Link></p>
+          <p><Link className="inline-block py-2" href="/politicas/privacidade">Privacidade</Link></p>
+          <p><Link className="inline-block py-2" href="/politicas/trocas">Trocas e devoluções</Link></p>
+          <p><Link className="inline-block py-2" href="/politicas/termos">Termos de uso</Link></p>
         </div>
         <div className="text-sm space-y-1"><p className="label">Redes sociais</p>
-          {social.length ? social.map(([n, u]) => <p key={n}><a href={u} target="_blank" rel="noopener noreferrer">{n}</a></p>) : <p className="text-mute">—</p>}
+          {social.length ? social.map(([n, u]) => <p key={n}><a className="inline-block py-2" href={u} target="_blank" rel="noopener noreferrer">{n}</a></p>) : <p className="text-mute">—</p>}
         </div>
       </div>
       <p className="border-t border-steel py-4 text-center text-xs text-mute">© {new Date().getFullYear()} {s.name}. Todos os direitos reservados.</p>

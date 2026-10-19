@@ -34,7 +34,7 @@ jobs:
       - run: npm run build
       - name: E2E (Playwright)
         run: |
-          SEED_DEMO=1 npx tsx prisma/seed.ts
+          SEED_CATALOG=1 npx tsx prisma/seed.ts
           ADMIN_EMAIL=admin@teste.local ADMIN_PASSWORD=SenhaTeste123 npx tsx scripts/create-admin.ts
           npx playwright install --with-deps chromium
           npx playwright test
