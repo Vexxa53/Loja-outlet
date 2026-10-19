@@ -215,10 +215,12 @@ enum OrderStatus {
 
 enum PaymentStatus {
   PENDING
+  PROCESSING
   APPROVED
   REJECTED
   CANCELLED
   REFUNDED
+  EXPIRED
 }
 
 model Order {
@@ -231,6 +233,7 @@ model Order {
   phone           String?
   status          OrderStatus    @default(PENDING)
   paymentStatus   PaymentStatus  @default(PENDING)
+  paymentMethod   String?
   subtotalCents   Int
   discountCents   Int            @default(0)
   shippingCents   Int            @default(0)
@@ -295,17 +298,30 @@ model Payment {
   id         String        @id @default(cuid())
   orderId    String
   order      Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  provider   String
-  externalId String?
-  method     String?
+  customerId String?
+  provider   String        // gateway: "test" (simulação), "manual" (não configurado), "mercadopago"...
+  externalId String?       // id da cobrança no gateway
+  transactionId String?    @unique // id interno único da transação
+  method     String?       // PIX | CREDIT_CARD | DEBIT_CARD | OTHER
   status     PaymentStatus @default(PENDING)
   amountCents Int
+  installments Int         @default(1)
+  installmentCents Int?
+  cardBrand  String?       // só bandeira e 4 últimos dígitos; nunca número completo/CVV
+  cardLast4  String?
+  pixCopyPaste String?     // "copia e cola" (quando houver gateway real)
+  pixQrCode  String?       // QR Code em texto/base64 (quando houver gateway real)
+  isTest     Boolean       @default(false)
+  failureReason String?
+  paidAt     DateTime?
+  expiresAt  DateTime?
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
   events     PaymentEvent[]
 
   @@unique([provider, externalId])
   @@index([orderId])
+  @@index([status, expiresAt])
 }
 
 // Idempotência de webhooks: cada notificação é processada uma única vez.

@@ -1,20 +1,23 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { db } from "../db";
 import { changeOrderStatus } from "../orders";
+import { mpCreds } from "./config";
 
 const API = "https://api.mercadopago.com";
 
-export function mpConfigured(): boolean {
-  return !!process.env.MP_ACCESS_TOKEN;
+export async function mpConfigured(): Promise<boolean> {
+  return !!(await mpCreds());
 }
 
 type OrderForPref = { id: string; number: number; email: string; totalCents: number };
 
 /** Cria preferência (Checkout Pro). O valor vem do pedido salvo no servidor. */
 export async function createPreference(order: OrderForPref, baseUrl: string): Promise<string> {
+  const creds = await mpCreds();
+  if (!creds) throw new Error("Gateway não configurado.");
   const res = await fetch(`${API}/checkout/preferences`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`, "Content-Type": "application/json", "X-Idempotency-Key": order.id },
+    headers: { Authorization: `Bearer ${creds.token}`, "Content-Type": "application/json", "X-Idempotency-Key": order.id },
     body: JSON.stringify({
       items: [{ title: `Pedido #${order.number}`, quantity: 1, unit_price: order.totalCents / 100, currency_id: "BRL" }],
       payer: { email: order.email },
@@ -52,8 +55,10 @@ const MAP: Record<string, "APPROVED" | "REJECTED" | "CANCELLED" | "REFUNDED" | "
 
 /** Consulta o pagamento na API (fonte de verdade) e aplica no pedido, uma única vez por (id,status). */
 export async function processPayment(paymentId: string): Promise<"processed" | "duplicate" | "ignored"> {
+  const creds = await mpCreds();
+  if (!creds) throw new Error("Gateway não configurado.");
   const res = await fetch(`${API}/v1/payments/${encodeURIComponent(paymentId)}`, {
-    headers: { Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}` },
+    headers: { Authorization: `Bearer ${creds.token}` },
   });
   if (!res.ok) throw new Error(`Falha ao consultar pagamento (${res.status})`);
   const p = (await res.json()) as { id: number; status: string; external_reference?: string; payment_method_id?: string; transaction_amount: number };
@@ -68,11 +73,17 @@ export async function processPayment(paymentId: string): Promise<"processed" | "
   } catch {
     return "duplicate"; // violação do índice único = já processado
   }
-  const payment = await db.payment.upsert({
-    where: { provider_externalId: { provider: "mercadopago", externalId: String(p.id) } },
-    create: { orderId: order.id, provider: "mercadopago", externalId: String(p.id), method: p.payment_method_id, status, amountCents: order.totalCents },
-    update: { status, method: p.payment_method_id },
-  });
+  // liga a cobrança criada no checkout (sem id externo ainda) ao pagamento real, em vez de duplicar o registro
+  const known = await db.payment.findUnique({ where: { provider_externalId: { provider: "mercadopago", externalId: String(p.id) } } });
+  const pre = known ? null : await db.payment.findFirst({ where: { orderId: order.id, provider: "mercadopago", externalId: null } });
+  const paidAt = status === "APPROVED" ? new Date() : undefined;
+  const payment = pre
+    ? await db.payment.update({ where: { id: pre.id }, data: { externalId: String(p.id), status, paidAt } })
+    : await db.payment.upsert({
+        where: { provider_externalId: { provider: "mercadopago", externalId: String(p.id) } },
+        create: { orderId: order.id, customerId: order.customerId, provider: "mercadopago", externalId: String(p.id), method: p.payment_method_id, status, amountCents: order.totalCents, paidAt },
+        update: { status, paidAt },
+      });
   await db.order.update({ where: { id: order.id }, data: { paymentStatus: status } });
   if (status === "APPROVED") {
     // Pagamento aprovado depois de o pedido ter sido cancelado/expirado: não reativa sozinho; deixa aviso para o atendimento.
@@ -85,4 +96,24 @@ export async function processPayment(paymentId: string): Promise<"processed" | "
   // Pagamento recusado NÃO cancela o pedido: o cliente pode tentar de novo; o cron expira pedidos não pagos em 48h.
   if (status === "REFUNDED") await changeOrderStatus(order.id, "REFUNDED", "mercadopago", "Estorno").catch(() => undefined);
   return "processed";
+}
+
+/** Webhook do Mercado Pago (usado pelas rotas /api/webhooks/mercadopago e /api/webhooks/payments/mercadopago). */
+export async function handleMercadoPagoWebhook(req: import("next/server").NextRequest): Promise<Response> {
+  const creds = await mpCreds();
+  if (!creds?.webhookSecret) return Response.json({ error: "not configured" }, { status: 503 });
+  const body = (await req.json().catch(() => ({}))) as { type?: string; data?: { id?: string | number } };
+  const dataId = String(req.nextUrl.searchParams.get("data.id") ?? body.data?.id ?? "");
+  if (!dataId) return Response.json({ error: "bad request" }, { status: 400 });
+  if (!verifySignature({ signature: req.headers.get("x-signature"), requestId: req.headers.get("x-request-id"), dataId, secret: creds.webhookSecret })) {
+    return Response.json({ error: "invalid signature" }, { status: 401 });
+  }
+  const type = req.nextUrl.searchParams.get("type") ?? body.type;
+  if (type && type !== "payment") return Response.json({ ok: true, ignored: true });
+  try {
+    return Response.json({ ok: true, result: await processPayment(dataId) });
+  } catch (e) {
+    console.error("webhook mp", e instanceof Error ? e.message : "erro");
+    return Response.json({ error: "processing failed" }, { status: 500 }); // o gateway fará nova tentativa
+  }
 }

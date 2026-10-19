@@ -78,6 +78,16 @@ enviadas ao armazenamento de imagens configurado (Supabase) e passam a seguir o 
 ## Vitrine (estilo marketplace de moda masculina)
 Barra de avisos (editável em **Configurações**), menu com departamentos e submenus, busca com sugestões, favoritos (salvos no navegador do cliente), vitrines de Lançamentos/Destaques/Mais vendidos/Ofertas, atalhos por tamanho, listagem com filtros (categoria, tamanho, cor, preço), ordenação e paginação, página de produto com cor/tamanho, simulador de frete e aviso "Adicionado à sacola", e newsletter com consentimento (LGPD). Os e-mails da newsletter aparecem em **Clientes** e podem ser exportados em CSV.
 
+## Pagamentos (pronto para ligar depois)
+Toda a estrutura já existe; **nenhum recebedor, chave PIX ou credencial está configurado**. Em **Configurações → Pagamentos** (`/admin/config/pagamentos`):
+- **Modo:** *Não configurado* (padrão: pedido fica aguardando e o admin confirma o recebimento manualmente), *Teste/simulação* (sem cobrança real) ou *Recebimento real*.
+- **PIX** (ativar, chave, recebedor, validade), **Cartão** (crédito/débito, gateway, Public Key, Secret Key, ambiente Teste/Produção, parcelas) e **Webhook** (URL e assinatura). Segredos ficam **criptografados** (AES-256-GCM, chave derivada de `AUTH_SECRET` ou `PAYMENTS_ENCRYPTION_KEY`), nunca voltam para a tela e a auditoria registra só *que* mudaram.
+- **Checkout em etapas:** Identificação → Entrega → Pagamento → Revisão → Pedido criado → Pagamento → Confirmação. Frete, totais e valor do pagamento são sempre calculados no servidor.
+- **Status do pagamento:** Aguardando, Processando, Aprovado, Recusado, Cancelado, Estornado, Expirado — o pedido acompanha (aprovado = pago; expirado/cancelado = cancelado e estoque devolvido; estornado = reembolsado; recusado = continua aguardando e permite nova tentativa). Mudanças passam por uma única função (`lib/payments/service.ts`) com máquina de estados, idempotência e conferência do valor.
+- **Modo de teste:** PIX simulado (código "TESTE-SIMULADO-NAO-PAGAVEL…") e cartões de teste; um painel simula aprovado, recusado, pendente, expirado, cancelado e estorno. Tudo marcado como **TESTE**. O cartão é "tokenizado" no navegador: o servidor recebe só token, bandeira e 4 últimos dígitos (nunca número/CVV).
+- **Ligar o recebimento real:** escolha o gateway, informe as credenciais, cadastre o webhook (`/api/webhooks/mercadopago` ou `/api/webhooks/payments/<gateway>`) e mude o modo para *Recebimento real*. Hoje só o adaptador do Mercado Pago está instalado; outros gateways entram como novos adaptadores sem mexer em checkout, banco ou pedidos.
+- **Importante:** deixe o modo *Teste* desligado na loja aberta ao público.
+
 ## Perfis e permissões
 Administrador principal (fixo, todas), Gestor da loja, Gestor de produtos, Estoquista, Atendimento, Operador de pedidos e Analista.
 As permissões por perfil são editáveis em Admin → Usuários. A verificação é feita **no servidor** (`requireAdmin(perm)` em cada página/ação/rota);
