@@ -20,7 +20,7 @@ test("loja: navegação, filtros, carrinho, checkout e conta", async ({ page, br
 
   await page.goto("/produto/moletom-basico-com-capuz-taupe");
   await page.getByRole("button", { name: "M", exact: true }).click();
-  await page.getByRole("button", { name: "Adicionar à sacola" }).click();
+  await page.getByRole("button", { name: "Adicionar à sacola", exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText("Adicionado à sacola");
   await page.getByRole("button", { name: "Continuar comprando" }).click();
   await page.goto("/carrinho");

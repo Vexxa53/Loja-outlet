@@ -108,10 +108,10 @@ test("produto: cadastro com upload, edição, troca de imagem, status e exclusã
   await expect(store.getByText("Indisponível").first()).toBeVisible();
   await store.goto(storeUrl);
   await expect(store.getByText("Este produto está indisponível no momento.")).toBeVisible();
-  await expect(store.getByRole("button", { name: /Adicionar à sacola|Selecione/ })).toHaveCount(0);
+  await expect(store.getByRole("button", { name: /Comprar|Adicionar à sacola/ })).toHaveCount(0);
   await setStatus("PUBLISHED");
   await store.goto(storeUrl);
-  await expect(store.getByRole("button", { name: /Selecione o tamanho/ })).toBeVisible();
+  await expect(store.getByRole("button", { name: "Comprar" })).toBeVisible();
 
   // 7) persistência: sair, entrar de novo e conferir
   await page.getByRole("button", { name: "Sair" }).click();
