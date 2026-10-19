@@ -414,3 +414,12 @@ model RateLimit {
   count   Int
   resetAt DateTime
 }
+
+// Cadastro de e-mail para novidades (com consentimento registrado, LGPD)
+model NewsletterSignup {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String   @default("site")
+  consentAt DateTime @default(now())
+  createdAt DateTime @default(now())
+}

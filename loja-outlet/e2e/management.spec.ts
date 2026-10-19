@@ -55,10 +55,10 @@ test("produto: cadastro com upload, edição, troca de imagem, status e exclusã
   // 2) aparece na loja, com a imagem carregando e o selo de desconto
   const store = await browser.newPage(); watch(store);
   await cardOnStore(store, NAME);
-  await expect(store.getByText(NAME)).toBeVisible();
-  await expect(store.getByText("-20%")).toBeVisible();
-  await store.getByText(NAME).first().click();
-  await expect(store.getByRole("heading", { name: NAME })).toBeVisible();
+  await expect(store.getByRole("heading", { name: NAME, level: 3 })).toBeVisible();
+  await expect(store.getByText("-20%").first()).toBeVisible();
+  await store.getByRole("heading", { name: NAME, level: 3 }).click();
+  await expect(store.getByRole("heading", { name: NAME, level: 1 })).toBeVisible();
   await expect.poll(() => store.locator("main img").first().evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true);
   const storeUrl = store.url();
 
@@ -101,14 +101,14 @@ test("produto: cadastro com upload, edição, troca de imagem, status e exclusã
   };
   await setStatus("DRAFT");
   await cardOnStore(store, NAME);
-  await expect(store.getByText(`${NAME} Editada`)).toHaveCount(0);
+  await expect(store.getByRole("heading", { name: `${NAME} Editada`, level: 3 })).toHaveCount(0);
   expect((await store.goto(storeUrl))?.status()).toBe(404);
   await setStatus("UNAVAILABLE");
   await cardOnStore(store, NAME);
   await expect(store.getByText("Indisponível").first()).toBeVisible();
   await store.goto(storeUrl);
   await expect(store.getByText("Este produto está indisponível no momento.")).toBeVisible();
-  await expect(store.getByRole("button", { name: /Adicionar ao carrinho|Selecione/ })).toHaveCount(0);
+  await expect(store.getByRole("button", { name: /Adicionar à sacola|Selecione/ })).toHaveCount(0);
   await setStatus("PUBLISHED");
   await store.goto(storeUrl);
   await expect(store.getByRole("button", { name: /Selecione o tamanho/ })).toBeVisible();
@@ -291,7 +291,7 @@ test("permissões: upload exige login e permissão no servidor", async ({ page, 
   await page.goto("/admin/usuarios");
   const f = page.locator("form", { has: page.locator("input[name=password]") }).first();
   await f.getByLabel("Nome").fill("Estoquista Upload");
-  await f.getByLabel("E-mail").fill(`up${stamp}@teste.local`);
+  await f.getByLabel("E-mail", { exact: true }).fill(`up${stamp}@teste.local`);
   await f.getByLabel("Perfil").selectOption({ label: "Estoquista" });
   await f.getByLabel(/Senha inicial/).fill("SenhaEstoq123");
   await f.getByRole("button", { name: "Criar usuário" }).click();

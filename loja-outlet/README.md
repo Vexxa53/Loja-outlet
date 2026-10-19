@@ -75,6 +75,9 @@ enviadas ao armazenamento de imagens configurado (Supabase) e passam a seguir o 
 - **Produção**: Supabase Storage (bucket **público**; nome em `SUPABASE_BUCKET`). Envio só pelo servidor com a chave secreta (aceita `sb_secret_...` e a antiga `service_role`).
 - **Desenvolvimento/testes**: `STORAGE_DRIVER=local` grava em `.uploads/` e serve em `/uploads/...`. **Nunca** configure isso na Vercel (o disco da função é temporário).
 
+## Vitrine (estilo marketplace de moda masculina)
+Barra de avisos (editável em **Configurações**), menu com departamentos e submenus, busca com sugestões, favoritos (salvos no navegador do cliente), vitrines de Lançamentos/Destaques/Mais vendidos/Ofertas, atalhos por tamanho, listagem com filtros (categoria, tamanho, cor, preço), ordenação e paginação, página de produto com cor/tamanho, simulador de frete e aviso "Adicionado à sacola", e newsletter com consentimento (LGPD). Os e-mails da newsletter aparecem em **Clientes** e podem ser exportados em CSV.
+
 ## Perfis e permissões
 Administrador principal (fixo, todas), Gestor da loja, Gestor de produtos, Estoquista, Atendimento, Operador de pedidos e Analista.
 As permissões por perfil são editáveis em Admin → Usuários. A verificação é feita **no servidor** (`requireAdmin(perm)` em cada página/ação/rota);

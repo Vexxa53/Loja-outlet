@@ -20,6 +20,8 @@ export type StoreSettings = {
   exchangePolicy: string;
   seoTitle: string;
   seoDescription: string;
+  // até 3 frases da barra de avisos no topo; vazio = usa as frases padrão (frete grátis, troca, atendimento)
+  promoBar: string[];
   homeSections: { featured: string; news: string; bestSellers: string; sale: string };
   shipping: ShippingConfig;
 };
@@ -42,6 +44,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   exchangePolicy: "Trocas e devoluções em até 7 dias após o recebimento (CDC).",
   seoTitle: "Outlet 3K — Camisas, calças, tênis, jaquetas e relógios",
   seoDescription: "Outlet 3K: camisas, calças, tênis, blusas e jaquetas e relógios com preço de outlet.",
+  promoBar: [],
   homeSections: { featured: "Destaques", news: "Lançamentos", bestSellers: "Mais vendidos", sale: "Ofertas" },
   shipping: DEFAULT_SHIPPING,
 };

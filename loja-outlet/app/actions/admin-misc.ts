@@ -243,6 +243,7 @@ export async function saveStoreSettings(fd: FormData) {
     name: s("name", 60) || "Loja", tagline: s("tagline", 100), accent, contactEmail: s("contactEmail", 120), contactPhone: s("contactPhone", 30), address: s("address", 200),
     instagram: s("instagram", 200), facebook: s("facebook", 200), tiktok: s("tiktok", 200), about: s("about"), privacyPolicy: s("privacyPolicy", 20000),
     termsPolicy: s("termsPolicy", 20000), exchangePolicy: s("exchangePolicy", 20000), seoTitle: s("seoTitle", 120), seoDescription: s("seoDescription", 300),
+    promoBar: [s("promo1", 90), s("promo2", 90), s("promo3", 90)].filter(Boolean),
     homeSections: { featured: s("secFeatured", 40), news: s("secNews", 40), bestSellers: s("secBest", 40), sale: s("secSale", 40) },
     shipping: {
       freeAboveCents: parseMoney(s("freeAbove")) ?? 0,
