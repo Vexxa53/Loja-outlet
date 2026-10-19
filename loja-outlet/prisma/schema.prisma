@@ -90,9 +90,10 @@ model Category {
 }
 
 enum ProductStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
+  DRAFT       // inativo: não aparece na loja
+  PUBLISHED   // ativo: aparece e pode ser comprado
+  ARCHIVED    // inativo e arquivado
+  UNAVAILABLE // aparece na loja, mas não pode ser comprado
 }
 
 model Product {
@@ -367,6 +368,12 @@ model Banner {
   ctaLabel  String?
   link      String?
   imageUrl  String
+  imagePath String?
+  // imagem opcional para telas pequenas (se vazia, usa a principal)
+  mobileImageUrl  String?
+  mobileImagePath String?
+  // onde exibir: all | desktop | mobile
+  device    String  @default("all")
   position  Int     @default(0)
   active    Boolean @default(true)
 }

@@ -2,11 +2,21 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-export type Slide = { id: string; title: string; subtitle?: string | null; ctaLabel?: string | null; link?: string | null; imageUrl?: string | null };
+export type Slide = { id: string; title: string; subtitle?: string | null; ctaLabel?: string | null; link?: string | null; imageUrl?: string | null; mobileImageUrl?: string | null; device?: string };
 
-export function HeroCarousel({ slides }: { slides: Slide[] }) {
+export function HeroCarousel({ slides: all }: { slides: Slide[] }) {
   const [i, setI] = useState(0);
+  const [mobile, setMobile] = useState(false);
   const [paused, setPaused] = useState(false);
+  // banners "só computador" / "só celular" são filtrados conforme a largura da tela
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => { setMobile(mq.matches); setI(0); };
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  const slides = all.filter((s) => !s.device || s.device === "all" || (mobile ? s.device === "mobile" : s.device === "desktop"));
   const n = slides.length;
 
   useEffect(() => {
@@ -29,8 +39,11 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
           <div key={s.id} role="group" aria-roledescription="slide" aria-label={`${k + 1} de ${n}`} aria-hidden={k !== i}
             className={`absolute inset-0 transition-opacity duration-700 ${k === i ? "opacity-100" : "pointer-events-none opacity-0"}`}>
             {s.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={s.imageUrl} alt="" className="absolute inset-0 -z-10 h-full w-full object-cover" />
+              <picture>
+                {s.mobileImageUrl && <source media="(max-width: 767px)" srcSet={s.mobileImageUrl} />}
+                { }
+                <img src={s.imageUrl} alt="" className="absolute inset-0 -z-10 h-full w-full object-cover" loading={k === 0 ? "eager" : "lazy"} decoding="async" {...(k === 0 ? { fetchPriority: "high" as const } : {})} />
+              </picture>
             ) : (
               <div className="absolute inset-0 -z-10 bg-gradient-to-br from-ink via-graphite to-steel">
                 <div className="absolute -right-24 top-0 h-full w-72 -skew-x-12 bg-accent/15" />
@@ -49,13 +62,13 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
       {n > 1 && (
         <>
           <button type="button" aria-label="Slide anterior" onClick={() => setI((i - 1 + n) % n)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 px-3 py-2 text-2xl hover:bg-accent hover:text-black">‹</button>
+            className="absolute left-2 top-1/2 h-11 w-11 -translate-y-1/2 bg-black/60 text-2xl hover:bg-accent hover:text-black">‹</button>
           <button type="button" aria-label="Próximo slide" onClick={() => setI((i + 1) % n)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 px-3 py-2 text-2xl hover:bg-accent hover:text-black">›</button>
-          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+            className="absolute right-2 top-1/2 h-11 w-11 -translate-y-1/2 bg-black/60 text-2xl hover:bg-accent hover:text-black">›</button>
+          <div className="absolute bottom-1 left-0 right-0 flex justify-center">
             {slides.map((s, k) => (
               <button key={s.id} type="button" aria-label={`Ir para o slide ${k + 1}`} aria-current={k === i} onClick={() => setI(k)}
-                className={`h-2 w-8 ${k === i ? "bg-accent" : "bg-white/40"}`} />
+                className="flex h-11 w-11 items-center justify-center"><span className={`block h-2 w-8 ${k === i ? "bg-accent" : "bg-white/40"}`} /></button>
             ))}
           </div>
         </>

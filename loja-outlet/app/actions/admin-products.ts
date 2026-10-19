@@ -8,14 +8,17 @@ import { go } from "@/lib/flash";
 import { parseMoney } from "@/lib/money";
 import { slugify } from "@/lib/slug";
 import { moveStock } from "@/lib/stock";
-import { deleteImage, uploadImage } from "@/lib/storage";
+import { deleteImage } from "@/lib/storage";
+
+const STATUSES = ["PUBLISHED", "DRAFT", "UNAVAILABLE", "ARCHIVED"] as const;
 
 const productSchema = z.object({
-  name: z.string().trim().min(2).max(160),
+  name: z.string().trim().min(2, "Informe o nome do produto.").max(160),
   description: z.string().max(5000).default(""),
-  sku: z.string().trim().min(2).max(40).toUpperCase(),
+  sku: z.string().trim().min(2, "Informe o código (SKU) do produto.").max(40).toUpperCase(),
   brand: z.string().trim().max(80).optional(),
   categoryId: z.string().optional(),
+  status: z.enum(STATUSES),
   weightGrams: z.coerce.number().int().min(1).max(50000),
   lengthCm: z.coerce.number().int().min(1).max(200),
   widthCm: z.coerce.number().int().min(1).max(200),
@@ -24,63 +27,89 @@ const productSchema = z.object({
   seoDescription: z.string().max(300).optional(),
 });
 
+const initialVariants = z.array(z.object({
+  size: z.string().trim().min(1).max(12),
+  color: z.string().trim().min(1).max(30),
+  stock: z.coerce.number().int().min(0).max(100000),
+})).max(60);
+
 async function uniqueSlug(base: string, ignoreId?: string) {
-  let slug = slugify(base) || "produto";
-  for (let i = 2; await db.product.findFirst({ where: { slug, id: ignoreId ? { not: ignoreId } : undefined } }); i++) slug = `${slugify(base)}-${i}`;
+  const root = slugify(base) || "produto";
+  let slug = root;
+  for (let i = 2; await db.product.findFirst({ where: { slug, id: ignoreId ? { not: ignoreId } : undefined } }); i++) slug = `${root}-${i}`;
   return slug;
 }
 
-export async function saveProduct(fd: FormData) {
+export type SaveState = { ok: boolean; error?: string; id?: string; created?: boolean };
+
+/**
+ * Cria ou atualiza um produto. Devolve um resultado (sem redirecionar) para o formulário
+ * poder enviar as imagens logo em seguida. Toda a validação acontece aqui, no servidor.
+ */
+export async function saveProductAction(fd: FormData): Promise<SaveState> {
   const admin = await requireAdmin("products.write");
   const id = String(fd.get("id") ?? "");
-  const p = productSchema.safeParse(Object.fromEntries(fd));
-  const cost = parseMoney(String(fd.get("cost") ?? "0")) ?? 0;
+  const parsed = productSchema.safeParse(Object.fromEntries(fd));
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Verifique os campos do produto." };
   const price = parseMoney(String(fd.get("price") ?? ""));
+  if (price == null || price <= 0) return { ok: false, error: "Informe um preço de venda válido (ex.: 129,90)." };
+  const cost = parseMoney(String(fd.get("cost") ?? "0")) ?? 0;
   const promoRaw = String(fd.get("promo") ?? "").trim();
   const promo = promoRaw ? parseMoney(promoRaw) : null;
-  const back = id ? `/admin/produtos/${id}` : "/admin/produtos/novo";
-  if (!p.success || price == null || price <= 0) go(back, "Verifique os campos obrigatórios e o preço.", true);
-  if (promoRaw && (promo == null || promo >= price!)) go(back, "O preço promocional deve ser menor que o preço de venda.", true);
+  if (promoRaw && (promo == null || promo >= price)) return { ok: false, error: "O preço promocional precisa ser menor que o preço de venda." };
+
+  let variants: z.infer<typeof initialVariants> = [];
+  const rawVariants = String(fd.get("variants") ?? "");
+  if (!id && rawVariants) {
+    const v = initialVariants.safeParse(JSON.parse(rawVariants || "[]"));
+    if (!v.success) return { ok: false, error: "Verifique tamanho, cor e estoque das variações." };
+    variants = v.data;
+  }
+  const d = parsed.data;
+  if ((d.status === "PUBLISHED" || d.status === "UNAVAILABLE") && !id && variants.length === 0)
+    return { ok: false, error: "Para publicar, informe ao menos uma variação (tamanho, cor e estoque). Ou salve como Inativo e complete depois." };
+  if ((d.status === "PUBLISHED" || d.status === "UNAVAILABLE") && id && (await db.variant.count({ where: { productId: id } })) === 0)
+    return { ok: false, error: "Cadastre ao menos uma variação antes de publicar." };
+
   const data = {
-    ...p.data!, brand: p.data!.brand || null, categoryId: p.data!.categoryId || null, seoTitle: p.data!.seoTitle || null, seoDescription: p.data!.seoDescription || null,
-    costCents: cost, priceCents: price!, promoPriceCents: promo,
+    name: d.name, description: d.description, sku: d.sku, brand: d.brand || null, categoryId: d.categoryId || null, status: d.status,
+    weightGrams: d.weightGrams, lengthCm: d.lengthCm, widthCm: d.widthCm, heightCm: d.heightCm,
+    seoTitle: d.seoTitle || null, seoDescription: d.seoDescription || null,
+    costCents: cost, priceCents: price, promoPriceCents: promo,
     featured: fd.get("featured") === "on", isNew: fd.get("isNew") === "on",
   };
   try {
     if (id) {
       const before = await db.product.findUnique({ where: { id } });
-      if (!before) go("/admin/produtos", "Produto não encontrado.", true);
-      const slug = before!.name === data.name ? before!.slug : await uniqueSlug(data.name, id);
-      await db.product.update({ where: { id }, data: { ...data, slug } });
-      const priceChanged = before!.priceCents !== data.priceCents || before!.promoPriceCents !== data.promoPriceCents || before!.costCents !== data.costCents;
-      await audit(admin.id, priceChanged ? "product.update+price" : "product.update", "Product", id,
-        priceChanged ? { price: [before!.priceCents, data.priceCents], promo: [before!.promoPriceCents, data.promoPriceCents], cost: [before!.costCents, data.costCents] } : undefined);
-    } else {
-      const created = await db.product.create({ data: { ...data, slug: await uniqueSlug(data.name) } });
-      await audit(admin.id, "product.create", "Product", created.id, { sku: created.sku });
-      go(`/admin/produtos/${created.id}`, "Produto criado como rascunho. Adicione variações e imagens.");
+      if (!before) return { ok: false, error: "Produto não encontrado." };
+      // o endereço (slug) permanece o mesmo ao renomear: links já compartilhados e o Google continuam funcionando
+      await db.product.update({ where: { id }, data });
+      const priceChanged = before.priceCents !== data.priceCents || before.promoPriceCents !== data.promoPriceCents || before.costCents !== data.costCents;
+      await audit(admin.id, priceChanged ? "product.update+price" : "product.update", "Product", id, {
+        ...(priceChanged ? { price: [before.priceCents, data.priceCents], promo: [before.promoPriceCents, data.promoPriceCents], cost: [before.costCents, data.costCents] } : {}),
+        ...(before.status !== data.status ? { status: [before.status, data.status] } : {}),
+      });
+      revalidatePath("/", "layout");
+      return { ok: true, id, created: false };
     }
+    const created = await db.$transaction(async (tx) => {
+      const p = await tx.product.create({ data: { ...data, slug: await uniqueSlug(data.name) } });
+      for (const v of variants) {
+        const vsku = `${data.sku}-${slugify(v.size)}-${slugify(v.color)}`.toUpperCase();
+        const row = await tx.variant.create({ data: { productId: p.id, sku: vsku, size: v.size.toUpperCase(), color: v.color, stock: 0 } });
+        if (v.stock > 0) await moveStock(tx, { variantId: row.id, delta: v.stock, type: "ENTRY", reason: "Estoque inicial", userId: admin.id });
+      }
+      return p;
+    });
+    await audit(admin.id, "product.create", "Product", created.id, { sku: created.sku, variants: variants.length });
+    revalidatePath("/", "layout");
+    return { ok: true, id: created.id, created: true };
   } catch (e) {
-    if (typeof e === "object" && e && "digest" in e) throw e;
-    go(back, "Não foi possível salvar (SKU duplicado?).", true);
+    const msg = e instanceof Error ? e.message : "";
+    if (msg.includes("Unique")) return { ok: false, error: "Já existe um produto (ou variação) com esse código SKU, ou tamanho/cor repetidos." };
+    console.error("saveProduct", msg);
+    return { ok: false, error: "Não foi possível salvar o produto. Tente novamente." };
   }
-  revalidatePath("/", "layout");
-  go(`/admin/produtos/${id}`, "Produto salvo.");
-}
-
-export async function setProductStatus(fd: FormData) {
-  const admin = await requireAdmin("products.write");
-  const id = String(fd.get("id"));
-  const status = String(fd.get("status"));
-  if (!["DRAFT", "PUBLISHED", "ARCHIVED"].includes(status)) go("/admin/produtos", "Status inválido.", true);
-  if (status === "PUBLISHED") {
-    const p = await db.product.findUnique({ where: { id }, include: { variants: true, images: true } });
-    if (!p || !p.variants.length) go(`/admin/produtos/${id}`, "Cadastre ao menos uma variação antes de publicar.", true);
-  }
-  await db.product.update({ where: { id }, data: { status: status as never } });
-  await audit(admin.id, `product.${status.toLowerCase()}`, "Product", id);
-  revalidatePath("/", "layout");
-  go(`/admin/produtos/${id}`, "Status atualizado.");
 }
 
 export async function duplicateProduct(fd: FormData) {
@@ -97,7 +126,7 @@ export async function duplicateProduct(fd: FormData) {
     },
   });
   await audit(admin.id, "product.duplicate", "Product", copy.id, { from: src!.id });
-  go(`/admin/produtos/${copy.id}`, "Produto duplicado (rascunho, estoque zerado, sem imagens).");
+  go(`/admin/produtos/${copy.id}`, "Produto duplicado como Inativo (estoque zerado e sem imagens).");
 }
 
 export async function deleteProduct(fd: FormData) {
@@ -107,7 +136,8 @@ export async function deleteProduct(fd: FormData) {
   if (sold > 0) {
     await db.product.update({ where: { id }, data: { status: "ARCHIVED" } });
     await audit(admin.id, "product.archive(instead-of-delete)", "Product", id);
-    go("/admin/produtos", "Produto com vendas: arquivado para preservar o histórico.");
+    revalidatePath("/", "layout");
+    go("/admin/produtos", "Este produto já foi vendido, então foi arquivado (some da loja) para preservar o histórico dos pedidos.");
   }
   const imgs = await db.productImage.findMany({ where: { productId: id } });
   await db.product.delete({ where: { id } });
@@ -118,8 +148,8 @@ export async function deleteProduct(fd: FormData) {
 }
 
 const variantSchema = z.object({
-  productId: z.string(), size: z.string().trim().min(1).max(10).toUpperCase(), color: z.string().trim().min(1).max(30),
-  sku: z.string().trim().min(2).max(50).toUpperCase(), stock: z.coerce.number().int().min(0).max(100000), minStock: z.coerce.number().int().min(0).max(10000),
+  productId: z.string(), size: z.string().trim().min(1).max(12).toUpperCase(), color: z.string().trim().min(1).max(30),
+  sku: z.string().trim().min(2).max(60).toUpperCase(), stock: z.coerce.number().int().min(0).max(100000), minStock: z.coerce.number().int().min(0).max(10000),
 });
 
 export async function addVariant(fd: FormData) {
@@ -154,25 +184,7 @@ export async function deleteVariant(fd: FormData) {
   await db.variant.delete({ where: { id } });
   await audit(admin.id, "variant.delete", "Variant", id);
   revalidatePath("/", "layout");
-  go(`/admin/produtos/${pid}`, "Variação removida (pedidos antigos preservam o snapshot).");
-}
-
-export async function uploadProductImages(fd: FormData) {
-  const admin = await requireAdmin("products.write");
-  const pid = String(fd.get("productId"));
-  const files = fd.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
-  if (!files.length) go(`/admin/produtos/${pid}`, "Selecione ao menos uma imagem.", true);
-  const last = await db.productImage.aggregate({ where: { productId: pid }, _max: { position: true } });
-  let pos = (last._max.position ?? -1) + 1;
-  try {
-    for (const f of files.slice(0, 8)) {
-      const up = await uploadImage(f, `products/${pid}`);
-      await db.productImage.create({ data: { productId: pid, url: up.url, path: up.path, position: pos++, alt: String(fd.get("alt") ?? "") || null } });
-    }
-  } catch (e) { go(`/admin/produtos/${pid}`, e instanceof Error ? e.message : "Falha no upload.", true); }
-  await audit(admin.id, "product.images.upload", "Product", pid, { count: files.length });
-  revalidatePath("/", "layout");
-  go(`/admin/produtos/${pid}`, "Imagens enviadas.");
+  go(`/admin/produtos/${pid}`, "Variação removida (pedidos antigos preservam o histórico).");
 }
 
 export async function moveImage(fd: FormData) {
@@ -186,7 +198,7 @@ export async function moveImage(fd: FormData) {
   [all[i], all[j]] = [all[j], all[i]];
   await db.$transaction(all.map((x, k) => db.productImage.update({ where: { id: x.id }, data: { position: k } })));
   revalidatePath("/", "layout");
-  go(`/admin/produtos/${img.productId}`);
+  go(`/admin/produtos/${img.productId}`, "Ordem das imagens atualizada.");
 }
 
 export async function removeImage(fd: FormData) {

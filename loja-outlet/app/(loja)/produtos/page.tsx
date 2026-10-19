@@ -34,7 +34,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
             <option value="">Relevância</option><option value="recentes">Mais recentes</option><option value="menor">Menor preço</option>
             <option value="maior">Maior preço</option><option value="vendidos">Mais vendidos</option></select></div>
         <button className="btn w-full">Filtrar</button>
-        <Link href="/produtos" className="block text-center text-mute underline">Limpar filtros</Link>
+        <Link href="/produtos" className="block py-3 text-center text-mute underline">Limpar filtros</Link>
       </form>
       <section>
         <p className="mb-4 text-sm text-mute">{total} produto(s) encontrado(s)</p>

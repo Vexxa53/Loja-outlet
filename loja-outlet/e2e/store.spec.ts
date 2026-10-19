@@ -1,9 +1,12 @@
+import { clearLimits } from "./limits";
 import { expect, test } from "@playwright/test";
 
 const stamp = Date.now();
 const emailA = `a${stamp}@example.com`;
 const emailB = `b${stamp}@example.com`;
 const pass = "SenhaForte123";
+
+test.beforeEach(clearLimits);
 
 test("loja: navegação, filtros, carrinho, checkout e conta", async ({ page, browser }) => {
   await page.goto("/");
@@ -113,26 +116,22 @@ test("admin: proteção de rotas, login, CRUD e permissões", async ({ page, req
   await cf.getByRole("button", { name: "Criar" }).click();
   await expect(page.getByText("Categoria salva.")).toBeVisible();
 
-  // produto + variação + publicar
+  // produto com variação inicial e publicação (formulário novo, uma etapa)
   await page.goto("/admin/produtos/novo");
-  await page.getByLabel("Nome", { exact: true }).fill(`Produto E2E ${stamp}`);
-  await page.getByLabel("SKU", { exact: true }).fill(`E2E-${stamp}`);
-  await page.getByLabel(/Preço de venda/).fill("100,00");
+  await page.getByLabel("Nome do produto").fill(`Produto E2E ${stamp}`);
+  await page.getByLabel("Código (SKU)").fill(`E2E-${stamp}`);
+  await page.getByLabel("Preço de venda (R$)").fill("100,00");
   await page.getByLabel(/Preço promocional/).fill("80,00");
-  await page.getByRole("button", { name: "Salvar produto" }).click();
-  await expect(page.getByText(/Produto criado/)).toBeVisible();
-  await page.getByPlaceholder("Cor").fill("Azul");
-  await page.getByPlaceholder("Tam.").fill("G");
-  await page.getByPlaceholder("SKU da variação").fill(`E2E-${stamp}-G`);
-  await page.getByPlaceholder("Estoque inicial").fill("4");
-  await page.getByRole("button", { name: "Adicionar" }).click();
-  await expect(page.getByText("Variação adicionada.")).toBeVisible();
-  await page.getByRole("button", { name: "Publicar" }).click();
-  await expect(page.getByText("Status atualizado.")).toBeVisible();
+  await page.getByLabel("Situação na loja").selectOption("PUBLISHED");
+  await page.getByLabel("Tamanho").first().fill("G");
+  await page.getByLabel("Cor").first().fill("Azul");
+  await page.getByLabel("Estoque").first().fill("4");
+  await page.getByRole("button", { name: "Cadastrar produto" }).click();
+  await expect(page.getByText("Produto cadastrado com sucesso!")).toBeVisible();
 
   // estoque: ajuste com motivo e saldo negativo bloqueado
   await page.goto(`/admin/estoque?q=E2E-${stamp}`);
-  const row = page.locator("tr", { hasText: `E2E-${stamp}-G` });
+  const row = page.locator("tr", { hasText: `E2E-${stamp}-G-AZUL` });
   await row.getByLabel("Quantidade").fill("10");
   await row.getByPlaceholder("Motivo").fill("teste e2e");
   await row.getByLabel("Tipo").selectOption("EXIT");
@@ -168,7 +167,7 @@ test("admin: proteção de rotas, login, CRUD e permissões", async ({ page, req
   await e.waitForURL("**/admin");
   await expect(e.getByRole("link", { name: "Usuários" })).toHaveCount(0);
   const denied = await e.goto("/admin/usuarios");
-  expect(e.url()).toContain("/admin/sem-permissao"); void denied;
+  void denied; await e.waitForURL(/\/admin\/sem-permissao/);
   expect((await e.goto("/admin/estoque"))?.status()).toBe(200);
   await ctx.close();
 });

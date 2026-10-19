@@ -10,7 +10,7 @@ export const productInclude = {
 
 export type CardProduct = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
 
-const live: Prisma.ProductWhereInput = { status: "PUBLISHED" };
+const live: Prisma.ProductWhereInput = { status: { in: ["PUBLISHED", "UNAVAILABLE"] } };
 
 export async function bestSellers(limit = 8): Promise<CardProduct[]> {
   const rows = await db.orderItem.groupBy({
@@ -22,7 +22,7 @@ export async function bestSellers(limit = 8): Promise<CardProduct[]> {
   });
   const ids = rows.map((r) => r.productId!).filter(Boolean);
   if (!ids.length) return [];
-  const products = await db.product.findMany({ where: { ...live, id: { in: ids } }, include: productInclude });
+  const products = await db.product.findMany({ where: { status: "PUBLISHED", id: { in: ids } }, include: productInclude });
   return ids.map((id) => products.find((p) => p.id === id)).filter((p): p is CardProduct => !!p).slice(0, limit);
 }
 
@@ -74,7 +74,7 @@ export async function searchCatalog(sp: CatalogQuery) {
 export async function facets() {
   const [categories, variants] = await Promise.all([
     db.category.findMany({ where: { active: true }, orderBy: { position: "asc" } }),
-    db.variant.findMany({ where: { active: true, product: { status: "PUBLISHED" } }, select: { size: true, color: true }, distinct: ["size", "color"] }),
+    db.variant.findMany({ where: { active: true, product: { status: { in: ["PUBLISHED", "UNAVAILABLE"] } } }, select: { size: true, color: true }, distinct: ["size", "color"] }),
   ]);
   return { categories, sizes: [...new Set(variants.map((v) => v.size))], colors: [...new Set(variants.map((v) => v.color))] };
 }

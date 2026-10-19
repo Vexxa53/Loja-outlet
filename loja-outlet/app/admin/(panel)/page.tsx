@@ -41,8 +41,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3"><h1 className="h-display text-2xl">Dashboard</h1>
-        <form className="flex items-end gap-2"><div><label className="label" htmlFor="de">De</label><input id="de" type="date" name="de" defaultValue={iso(from)} className="input" /></div>
-          <div><label className="label" htmlFor="ate">Até</label><input id="ate" type="date" name="ate" defaultValue={iso(to)} className="input" /></div><button className="btn">Filtrar</button></form></div>
+        <form className="flex w-full flex-wrap items-end gap-2 sm:w-auto"><div className="min-w-0 flex-1 sm:flex-none"><label className="label" htmlFor="de">De</label><input id="de" type="date" name="de" defaultValue={iso(from)} className="input" /></div>
+          <div className="min-w-0 flex-1 sm:flex-none"><label className="label" htmlFor="ate">Até</label><input id="ate" type="date" name="ate" defaultValue={iso(to)} className="input" /></div><button className="btn w-full sm:w-auto">Filtrar</button></form></div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {kpi("Faturamento", brl(revenue))}{kpi("Pedidos pagos", String(agg._count))}{kpi("Ticket médio", brl(ticket))}{kpi("Itens vendidos", String(items._sum.quantity ?? 0))}{kpi("Aguardando pagamento", String(pending))}
       </div>
@@ -51,7 +51,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="card p-4"><p className="label">Mais vendidos</p>{top.length ? <ol className="space-y-1 text-sm">{top.map((t) => <li key={t.productName} className="flex justify-between"><span>{t.productName}</span><span>{t._sum.quantity} un · {brl(t._sum.totalCents ?? 0)}</span></li>)}</ol> : <p className="text-mute text-sm">Sem dados.</p>}</div>
         <div className="card p-4"><p className="label">Estoque baixo</p>{low.length ? <ul className="space-y-1 text-sm">{low.map((v) => <li key={v.id} className="flex justify-between"><span>{v.name} ({v.color}/{v.size})</span><span className={v.stock === 0 ? "text-red-400" : "text-accent"}>{v.stock}</span></li>)}</ul> : <p className="text-mute text-sm">Nenhum alerta.</p>}</div>
-        <div className="card p-4"><p className="label">Pedidos recentes</p><ul className="space-y-1 text-sm">{recent.map((o) => <li key={o.id} className="flex justify-between"><Link className="underline" href={`/admin/pedidos/${o.id}`}>#{o.number} {o.customerName}</Link><span>{brl(o.totalCents)}</span></li>)}{!recent.length && <p className="text-mute">Nenhum pedido.</p>}</ul>
+        <div className="card p-4"><p className="label">Pedidos recentes</p><ul className="space-y-1 text-sm">{recent.map((o) => <li key={o.id} className="flex items-center justify-between gap-2"><Link className="inline-flex min-h-11 items-center underline" href={`/admin/pedidos/${o.id}`}>#{o.number} {o.customerName}</Link><span>{brl(o.totalCents)}</span></li>)}{!recent.length && <p className="text-mute">Nenhum pedido.</p>}</ul>
           <p className="mt-2 text-xs text-mute">Atualizado em {dateBR(new Date())}</p></div>
       </div>
     </div>

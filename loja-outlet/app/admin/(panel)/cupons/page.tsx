@@ -24,6 +24,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ o
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="active" defaultChecked /> Ativo</label><button className="btn">Criar cupom</button></form>
       <div className="card overflow-x-auto"><table className="tbl"><thead><tr><th>Código</th><th>Desconto</th><th>Mín.</th><th>Validade</th><th>Usos</th><th>Ativo</th></tr></thead><tbody>
         {coupons.map((c) => (<tr key={c.id}><td>{c.code}</td><td>{c.type === "PERCENT" ? `${c.value}%` : brl(c.value)}</td><td>{brl(c.minOrderCents)}</td><td>{c.expiresAt ? c.expiresAt.toLocaleDateString("pt-BR") : "—"}</td><td>{c._count.uses}{c.maxUses ? `/${c.maxUses}` : ""}</td>
-          <td><form action={toggleCoupon}><input type="hidden" name="id" value={c.id} /><button className={`badge ${c.active ? "badge-accent" : ""}`}>{c.active ? "Ativo" : "Inativo"}</button></form></td></tr>))}</tbody></table></div></div>
+          <td><form action={toggleCoupon}><input type="hidden" name="id" value={c.id} /><button className={`badge inline-flex min-h-11 items-center px-4 ${c.active ? "badge-accent" : ""}`}>{c.active ? "Ativo" : "Inativo"}</button></form></td></tr>))}</tbody></table></div></div>
   );
 }

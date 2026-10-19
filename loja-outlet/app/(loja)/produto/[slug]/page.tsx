@@ -9,7 +9,7 @@ import { AddToCart } from "./AddToCart";
 
 async function load(slug: string) {
   return db.product.findFirst({
-    where: { slug, status: "PUBLISHED" },
+    where: { slug, status: { in: ["PUBLISHED", "UNAVAILABLE"] } },
     include: { images: { orderBy: { position: "asc" } }, variants: { where: { active: true }, orderBy: [{ size: "asc" }] }, category: true },
   });
 }
@@ -33,7 +33,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     "@context": "https://schema.org", "@type": "Product", name: p.name, sku: p.sku, description: p.description,
     image: p.images.map((i) => i.url),
     offers: { "@type": "Offer", priceCurrency: "BRL", price: (effectivePrice(p) / 100).toFixed(2),
-      availability: p.variants.some((v) => v.stock > 0) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" },
+      availability: p.status === "PUBLISHED" && p.variants.some((v) => v.stock > 0) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" },
   };
   return (
     <>
@@ -43,7 +43,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           {p.images.length ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.images[0].url} alt={p.images[0].alt || p.name} className="w-full card" />
+              <img src={p.images[0].url} alt={p.images[0].alt || p.name} className="w-full card" fetchPriority="high" decoding="async" />
               <div className="grid grid-cols-4 gap-2">
                 {p.images.slice(1).map((i) => (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -61,7 +61,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             {pct > 0 && (<><span className="text-mute line-through">{brl(p.priceCents)}</span><span className="badge badge-accent">-{pct}%</span></>)}
           </p>
           <div className="mt-6">
-            <AddToCart variants={p.variants.map((v) => ({ id: v.id, size: v.size, color: v.color, stock: v.stock }))} />
+            {p.status === "UNAVAILABLE"
+              ? <p className="flash">Este produto está indisponível no momento.</p>
+              : <AddToCart variants={p.variants.map((v) => ({ id: v.id, size: v.size, color: v.color, stock: v.stock }))} />}
           </div>
           <div className="mt-8 whitespace-pre-line text-sm leading-relaxed text-zinc-300">{p.description}</div>
         </div>

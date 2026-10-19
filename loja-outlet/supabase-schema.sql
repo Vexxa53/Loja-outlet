@@ -527,3 +527,11 @@ ALTER TABLE "PrivacyRequest" ADD CONSTRAINT "PrivacyRequest_customerId_fkey" FOR
 
 -- AddForeignKey
 ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "AdminUser"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- AlterEnum
+ALTER TYPE "ProductStatus" ADD VALUE 'UNAVAILABLE';
+
+-- AlterTable
+ALTER TABLE "Banner" ADD COLUMN     "device" TEXT NOT NULL DEFAULT 'all',
+ADD COLUMN     "imagePath" TEXT,
+ADD COLUMN     "mobileImagePath" TEXT,
+ADD COLUMN     "mobileImageUrl" TEXT;
