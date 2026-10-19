@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { memoPerRequest } from "@/lib/memo";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
@@ -12,11 +14,19 @@ import { ShippingCalc } from "@/components/store/ShippingCalc";
 import { FavoriteButton } from "@/components/store/FavoriteButton";
 import { AddToCart } from "./AddToCart";
 
-async function load(slug: string) {
+// uma única leitura por requisição (metadata e página usavam duas) e em uma só consulta (join)
+const load = memoPerRequest(async (slug: string) => {
   return db.product.findFirst({
+    relationLoadStrategy: "join",
     where: { slug, status: { in: ["PUBLISHED", "UNAVAILABLE"] } },
     include: { images: { orderBy: { position: "asc" } }, variants: { where: { active: true }, orderBy: [{ size: "asc" }] }, category: true },
   });
+});
+
+/** Produtos relacionados: carregam depois, sem segurar a página do produto. */
+async function Related({ productId, categoryId }: { productId: string; categoryId: string | null }) {
+  const items = await listFor({ categoryId: categoryId ?? undefined, id: { not: productId } }, 10);
+  return <Shelf id="sh-rel" title="Você também pode gostar" items={items} />;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -32,7 +42,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const p = await load((await params).slug);
   if (!p) notFound();
-  const [s, related] = await Promise.all([getSettings(), listFor({ categoryId: p.categoryId ?? undefined, id: { not: p.id } }, 10)]);
+  const s = await getSettings();
   const pct = discountPercent(p);
   const unavailable = p.status === "UNAVAILABLE";
   const jsonLd = {
@@ -75,7 +85,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <div className="whitespace-pre-line text-sm leading-relaxed text-zinc-300">{p.description || "Sem descrição."}</div></details>
         </div>
       </div>
-      <Shelf id="sh-rel" title="Você também pode gostar" items={related} />
+      <Suspense fallback={<div className="container-x py-8" aria-hidden><div className="h-6 w-56 animate-pulse bg-steel" /></div>}><Related productId={p.id} categoryId={p.categoryId} /></Suspense>
     </>
   );
 }

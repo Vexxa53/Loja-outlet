@@ -88,6 +88,12 @@ Toda a estrutura já existe; **nenhum recebedor, chave PIX ou credencial está c
 - **Ligar o recebimento real:** escolha o gateway, informe as credenciais, cadastre o webhook (`/api/webhooks/mercadopago` ou `/api/webhooks/payments/<gateway>`) e mude o modo para *Recebimento real*. Hoje só o adaptador do Mercado Pago está instalado; outros gateways entram como novos adaptadores sem mexer em checkout, banco ou pedidos.
 - **Importante:** deixe o modo *Teste* desligado na loja aberta ao público.
 
+## Desempenho
+- Configurações da loja e menu de categorias ficam em cache curto (5 min / 1 min) e são limpos na hora quando o painel salva algo (`lib/cache.ts`, `bustStore`).
+- O cabeçalho consulta tudo em paralelo e lê o login só do cookie assinado; a página do produto faz 1 consulta (join) e carrega "relacionados" depois (Suspense). Fontes são hospedadas pelo próprio site.
+- Para a loja responder mais rápido na Vercel, deixe a **região das funções** perto do banco: Vercel → Settings → Functions → Function Region (use a mesma região do projeto no Supabase; para São Paulo, `gru1`).
+- Diagnóstico: `PRISMA_QUERY_LOG=1` mostra cada consulta SQL no log do servidor.
+
 ## Perfis e permissões
 Administrador principal (fixo, todas), Gestor da loja, Gestor de produtos, Estoquista, Atendimento, Operador de pedidos e Analista.
 As permissões por perfil são editáveis em Admin → Usuários. A verificação é feita **no servidor** (`requireAdmin(perm)` em cada página/ação/rota);

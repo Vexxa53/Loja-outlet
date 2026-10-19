@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
-import { getCustomer } from "@/lib/auth";
+import { readSession } from "@/lib/session";
 import { getCartToken } from "@/lib/cart";
 import { getNavDepartments } from "@/lib/nav-data";
 import { MegaNav } from "@/components/store/MegaNav";
@@ -17,8 +17,9 @@ export function promoItems(s: Awaited<ReturnType<typeof getSettings>>): string[]
 }
 
 export async function Header() {
-  const [s, customer, token, departments] = await Promise.all([getSettings(), getCustomer(), getCartToken(), getNavDepartments()]);
-  const count = token ? (await db.cartItem.aggregate({ where: { cart: { token } }, _sum: { quantity: true } }))._sum.quantity ?? 0 : 0;
+  // tudo em paralelo; o cabeçalho só precisa saber se há login (leitura do cookie assinado, sem ir ao banco)
+  const countP = getCartToken().then(async (token) => (token ? (await db.cartItem.aggregate({ where: { cart: { token } }, _sum: { quantity: true } }))._sum.quantity ?? 0 : 0));
+  const [s, customer, departments, count] = await Promise.all([getSettings(), readSession("customer"), getNavDepartments(), countP]);
   const trending = departments.flatMap((d) => d.categories).slice(0, 6).map((c) => ({ name: c.name, slug: c.slug }));
   const promos = promoItems(s);
   const icon = "relative inline-flex h-11 min-w-11 items-center justify-center gap-1 hover:text-accent";
@@ -60,7 +61,7 @@ export async function Footer() {
     <footer className="mt-16 border-t-4 border-accent bg-graphite">
       <Newsletter name={s.name} />
       <div className="container-x grid gap-8 py-10 text-sm sm:grid-cols-2 lg:grid-cols-4">
-        <div><p className="h-display text-xl">{s.name}</p><p className="mt-2 text-mute">{s.about}</p></div>
+        <div><Link href="/" className="h-display inline-flex min-h-11 items-center text-xl hover:text-accent" aria-label={`${s.name} — página inicial`}>{s.name}</Link><p className="text-mute">{s.about}</p></div>
         <div><p className="label">Ajuda</p>
           <ul><li><Link className={a} href="/conta/pedidos">Meus pedidos</Link></li><li><Link className={a} href="/politicas/trocas">Trocas e devoluções</Link></li><li><Link className={a} href="/carrinho">Calcular frete</Link></li><li><Link className={a} href="/favoritos">Favoritos</Link></li></ul></div>
         <div><p className="label">Institucional</p>

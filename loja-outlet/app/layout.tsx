@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
+import { Archivo_Black, Inter } from "next/font/google";
 import "./globals.css";
 import { getSettings } from "@/lib/settings";
+
+// fontes hospedadas pelo próprio site (sem pedido bloqueante ao Google Fonts)
+const archivo = Archivo_Black({ subsets: ["latin"], weight: "400", display: "swap", variable: "--font-archivo" });
+const inter = Inter({ subsets: ["latin"], weight: ["400", "600", "800"], display: "swap", variable: "--font-inter" });
 
 export const dynamic = "force-dynamic";
 
@@ -17,12 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const s = await getSettings();
   return (
-    <html lang="pt-BR" style={{ ["--accent" as string]: s.accent }}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&display=swap" />
-      </head>
+    <html lang="pt-BR" className={`${archivo.variable} ${inter.variable}`} style={{ ["--accent" as string]: s.accent }}>
       <body>{children}</body>
     </html>
   );

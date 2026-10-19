@@ -1,4 +1,5 @@
 import { memoPerRequest } from "./memo";
+import { cached, TAG_SETTINGS } from "./cache";
 import { db } from "./db";
 import { DEFAULT_SHIPPING, type ShippingConfig } from "./pricing";
 
@@ -49,11 +50,14 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   shipping: DEFAULT_SHIPPING,
 };
 
-export const getSettings = memoPerRequest(async (): Promise<StoreSettings> => {
-  const rows = await db.setting.findMany();
+// Só as chaves da vitrine (nunca "payments"/"payments_secrets"), em cache por 5 min e limpo ao salvar no painel.
+const STORE_KEYS = Object.keys(DEFAULT_SETTINGS);
+const loadSettings = cached(async (): Promise<StoreSettings> => {
+  const rows = await db.setting.findMany({ where: { key: { in: STORE_KEYS } } });
   const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
   return { ...DEFAULT_SETTINGS, ...(map as Partial<StoreSettings>) };
-});
+}, ["store-settings"], { tags: [TAG_SETTINGS], revalidate: 300 });
+export const getSettings = memoPerRequest(loadSettings);
 
 export async function saveSettings(patch: Partial<StoreSettings>) {
   for (const [key, value] of Object.entries(patch)) {

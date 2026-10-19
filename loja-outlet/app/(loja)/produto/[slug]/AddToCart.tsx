@@ -39,7 +39,7 @@ export function AddToCart({ variants }: { variants: V[] }) {
       if (!r.ok) { setMsg({ ok: false, text: r.message }); return; }
       setMsg(null);
       if (goCart) { router.push("/carrinho"); return; }
-      setDone(r); router.refresh();
+      setDone(r);
     });
   };
   const chip = "inline-flex min-h-11 min-w-11 items-center justify-center border px-3 text-sm font-semibold";

@@ -1,6 +1,7 @@
 "use server";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { bustStore } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { audit } from "@/lib/audit";
@@ -17,7 +18,7 @@ export async function installStarterCatalogBatch(offset: number): Promise<BatchR
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const origin = host ? `${h.get("x-forwarded-proto") ?? "https"}://${host}` : undefined;
   const r = await installStarterBatch({ offset: Math.max(0, Math.floor(offset)), limit: 6, origin, userId: admin.id });
-  revalidatePath("/", "layout");
+  bustStore();
   return r;
 }
 
@@ -28,7 +29,7 @@ export async function setStarterStatus(fd: FormData) {
   if (!["DRAFT", "UNAVAILABLE", "PUBLISHED"].includes(status)) go("/admin/produtos", "Situação inválida.", true);
   const r = await db.product.updateMany({ where: { sku: { startsWith: STARTER_PREFIX } }, data: { status: status as never } });
   await audit(admin.id, "catalog.status", "Product", null, { status, count: r.count });
-  revalidatePath("/", "layout");
+  bustStore();
   go("/admin/produtos", `${r.count} produto(s) do catálogo inicial atualizados.`);
 }
 
@@ -48,6 +49,6 @@ export async function removeStarterCatalog() {
     }
   }
   await audit(admin.id, "catalog.remove", "Product", null, { removed, archived });
-  revalidatePath("/", "layout");
+  bustStore();
   go("/admin/produtos", `Catálogo inicial removido: ${removed} excluído(s)${archived ? `, ${archived} arquivado(s) por já terem pedidos` : ""}.`);
 }

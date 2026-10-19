@@ -7,8 +7,8 @@
   --color-line: #3a3d44;
   --color-mute: #9a9ea8;
   --color-accent: var(--accent, #ffd400);
-  --font-display: "Archivo Black", "Impact", system-ui, sans-serif;
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-archivo), "Archivo Black", "Impact", system-ui, sans-serif;
+  --font-sans: var(--font-inter), "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 html { background: var(--color-ink); color: #f4f4f5; }
