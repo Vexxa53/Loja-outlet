@@ -2,10 +2,17 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getOrCreateCart, getCartToken } from "@/lib/cart";
+import { getOrCreateCart, getCartToken, priceCart } from "@/lib/cart";
+import { effectivePrice } from "@/lib/pricing";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 
-export async function addToCart(variantId: string, quantity: number): Promise<{ ok: boolean; message: string }> {
+export type AddResult = {
+  ok: boolean; message: string;
+  added?: { name: string; size: string; color: string; quantity: number; unitCents: number; image: string | null };
+  cart?: { count: number; subtotalCents: number };
+};
+
+export async function addToCart(variantId: string, quantity: number): Promise<AddResult> {
   const parsed = z.object({ variantId: z.string().min(1), quantity: z.number().int().min(1).max(20) }).safeParse({ variantId, quantity });
   if (!parsed.success) return { ok: false, message: "Dados inválidos." };
   const v = await db.variant.findUnique({ where: { id: variantId }, include: { product: true } });
@@ -19,7 +26,12 @@ export async function addToCart(variantId: string, quantity: number): Promise<{ 
     create: { cartId: cart.id, variantId, quantity }, update: { quantity: total },
   });
   revalidatePath("/", "layout");
-  return { ok: true, message: "Adicionado ao carrinho." };
+  const [img, priced] = await Promise.all([db.productImage.findFirst({ where: { productId: v.productId }, orderBy: { position: "asc" }, select: { url: true } }), priceCart()]);
+  return {
+    ok: true, message: "Adicionado à sacola.",
+    added: { name: v.product.name, size: v.size, color: v.color, quantity, unitCents: effectivePrice(v.product), image: img?.url ?? null },
+    cart: { count: priced.lines.reduce((n, l) => n + l.quantity, 0), subtotalCents: priced.subtotalCents },
+  };
 }
 
 export async function updateCartItem(formData: FormData) {

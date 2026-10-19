@@ -24,7 +24,7 @@ atribuição obrigatória. Foram recortadas em 3:4 e convertidas para WebP (`nod
 | `OUT3K-CAL-003` | Calça Cargo Verde Oliva | https://images.unsplash.com/photo-1766575696324-5b65330f23c2 |
 | `OUT3K-CAL-004` | Calça Jogger Preta com Punhos | https://images.unsplash.com/photo-1552902875-9ac1f9fe0c07 |
 | `OUT3K-CAL-005` | Calça de Alfaiataria Azul-Petróleo | https://images.unsplash.com/photo-1611937669166-be4e0503b115 |
-| `OUT3K-CAL-006` | Calça Wide Leg Bege | https://images.unsplash.com/photo-1789110853687-71692f0e86be |
+| `OUT3K-CAL-006` | Calça Wide Leg Grafite | https://images.unsplash.com/photo-1724452142970-513e541622b6 |
 | `OUT3K-CAL-007` | Calça Chino Cáqui | https://images.unsplash.com/photo-1473966968600-fa801b869a1a |
 | `OUT3K-CAL-008` | Calça Jeans Oversized Azul | https://images.unsplash.com/photo-1674075872359-a174bc7ed420 |
 | `OUT3K-TEN-001` | Tênis Casual Branco | https://images.unsplash.com/photo-1641604103415-7a514480821d |
@@ -45,4 +45,4 @@ atribuição obrigatória. Foram recortadas em 3:4 e convertidas para WebP (`nod
 | `OUT3K-JAQ-008` | Jaqueta Casual Premium Caramelo | https://images.unsplash.com/photo-1617114919297-3c8ddb01f599 |
 | `OUT3K-REL-001` | Relógio Casual Minimalista Rosé | https://images.unsplash.com/photo-1524592094714-0f0654e20314 |
 | `OUT3K-REL-002` | Relógio Esportivo Híbrido Preto | https://images.unsplash.com/photo-1619462194445-533d7c3285de |
-| `OUT3K-REL-003` | Relógio Clássico com Pulseira Metálica Prata | https://images.unsplash.com/photo-1549972574-8e3e1ed6a347 |
+| `OUT3K-REL-003` | Relógio Clássico com Pulseira Metálica Prata | https://images.unsplash.com/photo-1596574556890-40f0563f2bbe |

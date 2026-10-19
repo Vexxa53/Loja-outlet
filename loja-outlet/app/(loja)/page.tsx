@@ -2,34 +2,41 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { bestSellers, listFor } from "@/lib/catalog";
+import { getNavDepartments } from "@/lib/nav-data";
 import { Shelf } from "@/components/ProductCard";
 import { HeroCarousel, type Slide } from "@/components/HeroCarousel";
+import { BenefitsBar, BrandStrip, CategoryTiles, FaqSection, SizeShortcuts } from "@/components/store/HomeSections";
 
 export default async function Home() {
-  const [s, banners, cats, featured, news, sale, best] = await Promise.all([
+  const [s, banners, departments, featured, news, sale, best] = await Promise.all([
     getSettings(),
     db.banner.findMany({ where: { active: true }, orderBy: { position: "asc" } }),
-    db.category.findMany({ where: { active: true, products: { some: { status: { in: ["PUBLISHED", "UNAVAILABLE"] } } } }, orderBy: { position: "asc" } }),
-    listFor({ featured: true }),
-    listFor({ isNew: true }),
-    listFor({ promoPriceCents: { not: null } }, 8, { updatedAt: "desc" }),
-    bestSellers(8),
+    getNavDepartments(),
+    listFor({ featured: true }, 10),
+    listFor({ isNew: true }, 10),
+    listFor({ promoPriceCents: { not: null } }, 10, { updatedAt: "desc" }),
+    bestSellers(10),
   ]);
   const hero = banners.filter((b) => b.placement === "hero").slice(0, 6);
+  const secondary = banners.filter((b) => b.placement === "secondary").slice(0, 3);
   // Sem banners cadastrados no painel, mostra 3 slides padrão (sem imagem) com as categorias da loja.
   const slides: Slide[] = hero.length
     ? hero.map((b) => ({ id: b.id, title: b.title, subtitle: b.subtitle, ctaLabel: b.ctaLabel, link: b.link, imageUrl: b.imageUrl, mobileImageUrl: b.mobileImageUrl, device: b.device }))
     : [
-        { id: "d1", title: s.name, subtitle: "Camisas, calças, jaquetas e muito mais com preço de outlet.", ctaLabel: "Ver roupas", link: "/produtos?categoria=camisas" },
+        { id: "d1", title: "Moda masculina", subtitle: "Camisas, calças, jaquetas e muito mais com preço de outlet.", ctaLabel: "Ver roupas", link: "/produtos?categoria=camisas" },
         { id: "d2", title: "Tênis em oferta", subtitle: "Os modelos que você procura, com desconto de verdade.", ctaLabel: "Ver tênis", link: "/produtos?categoria=tenis" },
-        { id: "d3", title: "Relógios para todo estilo", subtitle: "Complete o visual com um relógio.", ctaLabel: "Ver novidades", link: "/produtos?categoria=relogios" },
+        { id: "d3", title: "Relógios para todo estilo", subtitle: "Complete o visual com um relógio.", ctaLabel: "Ver relógios", link: "/produtos?categoria=relogios" },
       ];
-  const secondary = banners.filter((b) => b.placement === "secondary").slice(0, 3);
+  const empty = !featured.length && !news.length && !sale.length && !best.length;
   return (
     <>
       <HeroCarousel slides={slides} />
+      <BenefitsBar s={s} />
+      <CategoryTiles departments={departments} />
+      <Shelf id="sh-news" title={s.homeSections.news} href="/produtos?novo=1" items={news} />
+      <Shelf id="sh-feat" title={s.homeSections.featured} href="/produtos" items={featured} />
       {secondary.length > 0 && (
-        <section className="container-x grid gap-4 py-8 md:grid-cols-3">
+        <section className="container-x grid gap-4 py-6 md:grid-cols-3" aria-label="Campanhas">
           {secondary.map((b) => (
             <Link key={b.id} href={b.link || "/produtos"} className={`group relative aspect-[16/10] overflow-hidden card ${b.device === "desktop" ? "hidden md:block" : b.device === "mobile" ? "block md:hidden" : "block"}`}>
               <picture>
@@ -43,26 +50,12 @@ export default async function Home() {
           ))}
         </section>
       )}
-      {cats.length > 0 && (
-        <section className="container-x py-6">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-            {cats.map((c) => (
-              <Link key={c.id} href={`/produtos?categoria=${c.slug}`} className="card relative grid aspect-[4/3] place-items-center overflow-hidden hover:border-accent">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {c.imageUrl && <img src={c.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-50" />}
-                <span className="relative h-display text-lg">{c.name}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-      <Shelf title={s.homeSections.featured} href="/produtos" items={featured} />
-      <Shelf title={s.homeSections.news} href="/produtos?ordem=recentes" items={news} />
-      <Shelf title={s.homeSections.bestSellers} href="/produtos?ordem=vendidos" items={best} />
-      <Shelf title={s.homeSections.sale} href="/produtos?promo=1" items={sale} />
-      {!featured.length && !news.length && !sale.length && !best.length && (
-        <p className="container-x py-20 text-center text-mute">Em breve novos produtos.</p>
-      )}
+      <SizeShortcuts />
+      <Shelf id="sh-best" title={s.homeSections.bestSellers} href="/produtos?ordem=vendidos" items={best} />
+      <Shelf id="sh-sale" title={s.homeSections.sale} href="/produtos?promo=1" items={sale} />
+      <BrandStrip />
+      {empty && <p className="container-x py-20 text-center text-mute">Em breve novos produtos.</p>}
+      <FaqSection s={s} />
     </>
   );
 }

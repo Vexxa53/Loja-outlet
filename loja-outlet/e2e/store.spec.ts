@@ -20,32 +20,33 @@ test("loja: navegação, filtros, carrinho, checkout e conta", async ({ page, br
 
   await page.goto("/produto/moletom-basico-com-capuz-taupe");
   await page.getByRole("button", { name: "M", exact: true }).click();
-  await page.getByRole("button", { name: "Adicionar ao carrinho" }).click();
-  await expect(page.getByRole("status")).toContainText("Adicionado");
+  await page.getByRole("button", { name: "Adicionar à sacola" }).click();
+  await expect(page.getByRole("dialog")).toContainText("Adicionado à sacola");
+  await page.getByRole("button", { name: "Continuar comprando" }).click();
   await page.goto("/carrinho");
   await expect(page.getByText("Moletom Básico com Capuz Taupe")).toBeVisible();
   await page.getByLabel("Cupom").fill("BEMVINDO10");
   await page.getByRole("button", { name: "Aplicar" }).click();
   await expect(page.getByText("Desconto")).toBeVisible();
-  await page.getByLabel("CEP").fill("01310-100");
+  await page.getByLabel("CEP", { exact: true }).fill("01310-100");
   await page.getByRole("button", { name: "Frete" }).click();
   await expect(page.getByText(/Entrega padrão \(/)).toBeVisible();
 
   // cadastro
   await page.goto("/conta/cadastrar");
   await page.getByLabel("Nome completo").fill("Cliente A");
-  await page.getByLabel("E-mail").fill(emailA);
+  await page.getByLabel("E-mail", { exact: true }).fill(emailA);
   await page.getByLabel(/Senha/).fill(pass);
   await page.getByRole("button", { name: "Cadastrar" }).click();
   await expect(page).toHaveURL(/\/conta$/);
 
   // checkout
   await page.goto("/checkout?cep=01310-100");
-  await page.getByLabel("Rua").fill("Av Paulista");
-  await page.getByLabel("Número").fill("1000");
-  await page.getByLabel("Bairro").fill("Bela Vista");
-  await page.getByLabel("Cidade").fill("São Paulo");
-  await page.getByLabel("UF").fill("SP");
+  await page.getByLabel("Rua", { exact: true }).fill("Av Paulista");
+  await page.getByLabel("Número", { exact: true }).fill("1000");
+  await page.getByLabel("Bairro", { exact: true }).fill("Bela Vista");
+  await page.getByLabel("Cidade", { exact: true }).fill("São Paulo");
+  await page.getByLabel("UF", { exact: true }).fill("SP");
   await page.getByRole("button", { name: "Confirmar pedido" }).click();
   await expect(page).toHaveURL(/\/pedido\/.+/);
   const orderUrl = page.url();
@@ -58,7 +59,7 @@ test("loja: navegação, filtros, carrinho, checkout e conta", async ({ page, br
   const b = await ctx.newPage();
   await b.goto("/conta/cadastrar");
   await b.getByLabel("Nome completo").fill("Cliente B");
-  await b.getByLabel("E-mail").fill(emailB);
+  await b.getByLabel("E-mail", { exact: true }).fill(emailB);
   await b.getByLabel(/Senha/).fill(pass);
   await b.getByRole("button", { name: "Cadastrar" }).click();
   await expect(b).toHaveURL(/\/conta$/);
@@ -70,7 +71,7 @@ test("loja: navegação, filtros, carrinho, checkout e conta", async ({ page, br
   const ctx2 = await browser.newContext();
   const c = await ctx2.newPage();
   await c.goto("/conta/entrar");
-  await c.getByLabel("E-mail").fill(emailA);
+  await c.getByLabel("E-mail", { exact: true }).fill(emailA);
   await c.getByLabel("Senha").fill("errada12345");
   await c.getByRole("button", { name: "Entrar" }).click();
   await expect(c.locator("p[role=alert]")).toContainText("inválidos");
@@ -99,12 +100,12 @@ test("admin: proteção de rotas, login, CRUD e permissões", async ({ page, req
   expect((await request.post("/api/webhooks/mercadopago", { data: { data: { id: "1" } } })).status()).toBeGreaterThanOrEqual(401);
 
   // senha errada
-  await page.getByLabel("E-mail").fill("admin@teste.local");
+  await page.getByLabel("E-mail", { exact: true }).fill("admin@teste.local");
   await page.getByLabel("Senha").fill("errada12345");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.locator("p[role=alert]")).toContainText("inválidas");
 
-  await page.getByLabel("E-mail").fill("admin@teste.local");
+  await page.getByLabel("E-mail", { exact: true }).fill("admin@teste.local");
   await page.getByLabel("Senha").fill("SenhaTeste123");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
@@ -153,7 +154,7 @@ test("admin: proteção de rotas, login, CRUD e permissões", async ({ page, req
   await page.getByPlaceholder("", { exact: false }).first();
   const f = page.locator("form", { has: page.locator("input[name=password]") }).first();
   await f.getByLabel("Nome").fill("Estoquista");
-  await f.getByLabel("E-mail").fill(`est${stamp}@teste.local`);
+  await f.getByLabel("E-mail", { exact: true }).fill(`est${stamp}@teste.local`);
   await f.getByLabel("Perfil").selectOption({ label: "Estoquista" });
   await f.getByLabel(/Senha inicial/).fill("SenhaEstoq123");
   await f.getByRole("button", { name: "Criar usuário" }).click();
@@ -162,7 +163,7 @@ test("admin: proteção de rotas, login, CRUD e permissões", async ({ page, req
   const ctx = await browser.newContext();
   const e = await ctx.newPage();
   await e.goto("/admin/login");
-  await e.getByLabel("E-mail").fill(`est${stamp}@teste.local`);
+  await e.getByLabel("E-mail", { exact: true }).fill(`est${stamp}@teste.local`);
   await e.getByLabel("Senha").fill("SenhaEstoq123");
   await e.getByRole("button", { name: "Entrar" }).click();
   await e.waitForURL("**/admin");

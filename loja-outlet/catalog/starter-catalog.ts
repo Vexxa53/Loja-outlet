@@ -60,8 +60,8 @@ export const STARTER_CATALOG: StarterProduct[] = [
     description: "Calça jogger preta com cintura elástica e punhos ajustados nos tornozelos. Confortável para o dia a dia." },
   { sku: "OUT3K-CAL-005", category: "calcas", name: "Calça de Alfaiataria Azul-Petróleo", priceCents: 22990, color: "Azul-petróleo", sizes: PANTS, stock: 8,
     description: "Calça de alfaiataria de corte reto e caimento estruturado, em azul-petróleo. Para looks sociais e de escritório." },
-  { sku: "OUT3K-CAL-006", category: "calcas", name: "Calça Wide Leg Bege", priceCents: 17990, color: "Bege", sizes: TOP, stock: 8, isNew: true,
-    description: "Calça wide leg de pernas largas e cintura elástica, em bege. Leve e confortável, com caimento fluido." },
+  { sku: "OUT3K-CAL-006", category: "calcas", name: "Calça Wide Leg Grafite", priceCents: 17990, color: "Grafite", sizes: TOP, stock: 8, isNew: true,
+    description: "Calça wide leg masculina de pernas largas e caimento reto, em tom grafite. Combina com blazers, moletons e looks de alfaiataria despojada." },
   { sku: "OUT3K-CAL-007", category: "calcas", name: "Calça Chino Cáqui", priceCents: 18990, color: "Cáqui", sizes: PANTS, stock: 8,
     description: "Calça chino de modelagem ajustada, em cáqui. Funciona do casual ao esporte fino." },
   { sku: "OUT3K-CAL-008", category: "calcas", name: "Calça Jeans Oversized Azul", priceCents: 20990, color: "Azul", sizes: PANTS, stock: 8, isNew: true,
@@ -109,5 +109,5 @@ export const STARTER_CATALOG: StarterProduct[] = [
   { sku: "OUT3K-REL-002", category: "relogios", name: "Relógio Esportivo Híbrido Preto", priceCents: 44990, color: "Preto", sizes: ONE, stock: 5, isNew: true,
     description: "Relógio de estilo esportivo com mostrador analógico, subdial e pulseira de silicone perfurada, em preto." },
   { sku: "OUT3K-REL-003", category: "relogios", name: "Relógio Clássico com Pulseira Metálica Prata", priceCents: 49990, color: "Prata", sizes: ONE, stock: 5,
-    description: "Relógio clássico com caixa e pulseira de elos metálicos em prata, mostrador claro com subdials e aro com detalhes brilhantes." },
+    description: "Relógio clássico masculino com caixa e pulseira de elos metálicos em prata e mostrador escuro. Para o trabalho e ocasiões sociais." },
 ];
