@@ -29,17 +29,21 @@ export default async function CartPage({ searchParams }: { searchParams: Promise
                 <p className="text-sm text-mute">{l.color} · {l.size} · {l.sku}</p>
                 <p className="text-accent font-bold">{brl(l.unitCents)} {l.unitCents < l.listCents && <span className="text-mute line-through text-xs">{brl(l.listCents)}</span>}</p>
                 {l.problem && <p className="flash flash-err mt-1">{l.problem}</p>}
-                <form action={updateCartItem} className="mt-2 flex items-center gap-2">
+                <form action={updateCartItem} className="mt-2 flex flex-wrap items-center gap-2">
                   <input type="hidden" name="itemId" value={l.itemId} />
-                  <input type="number" name="quantity" min={0} max={20} defaultValue={l.quantity} className="input !w-20" aria-label="Quantidade" />
-                  <button className="btn btn-ghost !py-2">Atualizar</button>
-                  <button name="quantity" value="0" className="text-sm text-mute underline">Remover</button>
+                  <div className="inline-flex items-center border border-line" role="group" aria-label={`Quantidade de ${l.name}`}>
+                    <button name="quantity" value={l.quantity - 1} aria-label="Diminuir quantidade" className="grid h-11 w-11 place-items-center text-lg hover:text-accent">−</button>
+                    <span className="grid h-11 min-w-10 place-items-center text-sm font-bold" aria-live="polite">{l.quantity}</span>
+                    <button name="quantity" value={l.quantity + 1} aria-label="Aumentar quantidade" className="grid h-11 w-11 place-items-center text-lg hover:text-accent">+</button>
+                  </div>
+                  <button name="quantity" value="0" className="inline-flex min-h-11 items-center px-2 text-sm text-mute underline">Remover</button>
                 </form>
               </div>
-              <p className="font-bold">{brl(l.totalCents)}</p>
+              <div className="text-right"><p className="text-xs text-mute">Subtotal</p><p className="font-bold">{brl(l.totalCents)}</p></div>
             </li>
           ))}
         </ul>
+        <Link href="/produtos" className="mt-4 inline-flex min-h-11 items-center text-sm underline hover:text-accent">← Continuar comprando</Link>
       </div>
       <aside className="card h-fit space-y-4 p-4">
         <h2 className="h-display text-xl">Resumo</h2>

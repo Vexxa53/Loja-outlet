@@ -10,8 +10,8 @@ type V = { id: string; size: string; color: string; stock: number };
 
 export function AddToCart({ variants }: { variants: V[] }) {
   const colors = [...new Set(variants.map((v) => v.color))];
-  const [color, setColor] = useState(colors[0] ?? "");
-  const sizes = sortSizes([...new Set(variants.filter((v) => v.color === color).map((v) => v.size))]);
+  const [color, setColor] = useState(colors.length > 1 ? "" : colors[0] ?? "");
+  const sizes = sortSizes([...new Set(variants.filter((v) => !color || v.color === color).map((v) => v.size))]);
   const [variantId, setVariantId] = useState<string>("");
   const [qty, setQty] = useState(1);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -29,12 +29,25 @@ export function AddToCart({ variants }: { variants: V[] }) {
     return () => window.removeEventListener("keydown", esc);
   }, [done]);
 
+  const missing = () => (colors.length > 1 && !color ? "Selecione a cor para continuar." : !variantId ? "Selecione o tamanho para continuar." : null);
+  const submit = (goCart: boolean) => {
+    const m = missing();
+    if (m) { setMsg({ ok: false, text: m }); return; }
+    if (pending) return;
+    start(async () => {
+      const r = await addToCart(variantId, qty);
+      if (!r.ok) { setMsg({ ok: false, text: r.message }); return; }
+      setMsg(null);
+      if (goCart) { router.push("/carrinho"); return; }
+      setDone(r); router.refresh();
+    });
+  };
   const chip = "inline-flex min-h-11 min-w-11 items-center justify-center border px-3 text-sm font-semibold";
   return (
     <div className="space-y-4">
       {colors.length > 1 || colors[0] ? (
         <div>
-          <p className="label">Cor: <span className="normal-case text-white">{color}</span></p>
+          <p className="label">Cor: <span className="normal-case text-white">{color || "selecione"}</span></p>
           <div className="flex flex-wrap gap-2">
             {colors.map((c) => (
               <button key={c} type="button" onClick={() => { setColor(c); setVariantId(""); }} aria-pressed={c === color} title={c}
@@ -49,7 +62,7 @@ export function AddToCart({ variants }: { variants: V[] }) {
         <p className="label">Tamanho</p>
         <div className="flex flex-wrap gap-2">
           {sizes.map((sz) => {
-            const v = variants.find((x) => x.color === color && x.size === sz)!;
+            const v = variants.find((x) => (!color || x.color === color) && x.size === sz)!;
             return (
               <button key={v.id} type="button" disabled={v.stock <= 0} onClick={() => setVariantId(v.id)} aria-pressed={v.id === variantId}
                 className={`${chip} ${v.id === variantId ? "border-accent bg-accent text-black" : "border-line hover:border-accent"} ${v.stock <= 0 ? "cursor-not-allowed text-mute line-through opacity-50" : ""}`}>{sz}</button>
@@ -60,13 +73,12 @@ export function AddToCart({ variants }: { variants: V[] }) {
       </div>
       <div className="flex items-center gap-3">
         <label className="label !mb-0" htmlFor="qty">Qtd.</label>
-        <input id="qty" type="number" min={1} max={selected?.stock || 10} value={qty} onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))} className="input !w-20" />
+        <input id="qty" type="number" min={1} max={selected?.stock || 10} value={qty} onChange={(e) => setQty(Math.min(selected?.stock || 20, Math.max(1, Number(e.target.value) || 1)))} className="input !w-20" />
       </div>
-      <button className="btn w-full md:w-auto md:min-w-64" disabled={pending || !variantId} onClick={() => start(async () => {
-        const r = await addToCart(variantId, qty);
-        setMsg(r.ok ? null : { ok: false, text: r.message });
-        if (r.ok) { setDone(r); router.refresh(); }
-      })}>{pending ? "Adicionando..." : variantId ? "Adicionar à sacola" : "Selecione o tamanho"}</button>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <button type="button" className="btn w-full" disabled={pending} onClick={() => submit(true)}>{pending ? "Adicionando..." : "Comprar"}</button>
+        <button type="button" className="btn btn-ghost w-full" disabled={pending} onClick={() => submit(false)}>Adicionar à sacola</button>
+      </div>
       {msg && <p role="alert" className="flash flash-err">{msg.text}</p>}
 
       {done?.added && (
