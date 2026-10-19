@@ -37,7 +37,7 @@ export function HeroCarousel({ slides: all }: { slides: Slide[] }) {
       <div className="relative min-h-[420px] md:min-h-[560px]">
         {slides.map((s, k) => (
           <div key={s.id} role="group" aria-roledescription="slide" aria-label={`${k + 1} de ${n}`} aria-hidden={k !== i}
-            className={`absolute inset-0 transition-opacity duration-700 ${k === i ? "opacity-100" : "pointer-events-none opacity-0"}`}>
+            className={`absolute inset-0 transition-opacity duration-500 ${k === i ? "opacity-100" : "pointer-events-none opacity-0"}`}>
             {s.imageUrl ? (
               <picture>
                 {s.mobileImageUrl && <source media="(max-width: 767px)" srcSet={s.mobileImageUrl} />}

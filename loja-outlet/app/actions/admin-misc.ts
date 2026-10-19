@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { bustStore } from "@/lib/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { hashPassword, passwordError, requireAdmin } from "@/lib/auth";
@@ -13,7 +14,7 @@ import { deleteImage, uploadImage } from "@/lib/storage";
 import { saveSettings, type StoreSettings } from "@/lib/settings";
 import { ALL_PERMISSIONS } from "@/lib/permissions";
 
-const refresh = () => revalidatePath("/", "layout");
+const refresh = () => bustStore();
 
 async function optionalUpload(fd: FormData, field: string, folder: string) {
   const f = fd.get(field);

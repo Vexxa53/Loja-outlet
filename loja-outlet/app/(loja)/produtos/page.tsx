@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { db } from "@/lib/db";
 import { facets, searchCatalog, type CatalogQuery } from "@/lib/catalog";
 import { CATEGORY_INTRO, PRICE_BANDS, SORTS, qs } from "@/lib/catalog-url";
 import { colorStyle } from "@/lib/nav";
@@ -13,8 +14,8 @@ const off = "border-line hover:border-accent hover:text-accent";
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<CatalogQuery> }): Promise<Metadata> {
   const sp = await searchParams;
-  const f = await facets({ ...sp, categoria: undefined });
-  const cat = f.categories.find((c) => c.slug === sp.categoria);
+  // só o nome da categoria (antes executava todos os filtros uma segunda vez só para o título)
+  const cat = sp.categoria ? await db.category.findFirst({ where: { slug: sp.categoria, active: true }, select: { name: true, slug: true } }) : null;
   return { title: cat ? cat.name : sp.q ? `Busca: ${sp.q}` : "Todos os produtos", description: cat ? CATEGORY_INTRO[cat.slug] : undefined };
 }
 

@@ -23,12 +23,12 @@ export async function bestSellers(limit = 8): Promise<CardProduct[]> {
   });
   const ids = rows.map((r) => r.productId!).filter(Boolean);
   if (!ids.length) return [];
-  const products = await db.product.findMany({ where: { status: "PUBLISHED", id: { in: ids } }, include: productInclude });
+  const products = await db.product.findMany({ relationLoadStrategy: "join", where: { status: "PUBLISHED", id: { in: ids } }, include: productInclude });
   return ids.map((id) => products.find((p) => p.id === id)).filter((p): p is CardProduct => !!p).slice(0, limit);
 }
 
 export const listFor = (where: Prisma.ProductWhereInput, take = 8, orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: "desc" }) =>
-  db.product.findMany({ where: { ...live, ...where }, include: productInclude, orderBy, take });
+  db.product.findMany({ relationLoadStrategy: "join", where: { ...live, ...where }, include: productInclude, orderBy, take });
 
 export type CatalogQuery = {
   q?: string; categoria?: string; min?: string; max?: string; tamanho?: string; cor?: string;
@@ -77,7 +77,7 @@ export async function searchCatalog(sp: CatalogQuery) {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(pages, Math.max(1, Number(sp.pagina) || 1));
   const ids = ranked.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((r) => r.id);
-  const found = await db.product.findMany({ where: { id: { in: ids } }, include: productInclude });
+  const found = await db.product.findMany({ relationLoadStrategy: "join", where: { id: { in: ids } }, include: productInclude });
   const products = ids.map((id) => found.find((p) => p.id === id)).filter((p): p is CardProduct => !!p);
   return { products, total, page, pages };
 }

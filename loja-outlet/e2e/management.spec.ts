@@ -58,6 +58,7 @@ test("produto: cadastro com upload, edição, troca de imagem, status e exclusã
   await expect(store.getByRole("heading", { name: NAME, level: 3 })).toBeVisible();
   await expect(store.getByText("-20%").first()).toBeVisible();
   await store.getByRole("heading", { name: NAME, level: 3 }).click();
+  await expect(store).toHaveURL(/\/produto\//);
   await expect(store.getByRole("heading", { name: NAME, level: 1 })).toBeVisible();
   await expect.poll(() => store.locator("main img").first().evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true);
   const storeUrl = store.url();

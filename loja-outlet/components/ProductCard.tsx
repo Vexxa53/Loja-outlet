@@ -4,6 +4,7 @@ import { discountPercent, effectivePrice } from "@/lib/pricing";
 import { sortSizes } from "@/lib/nav";
 import type { CardProduct } from "@/lib/catalog";
 import { FavoriteButton } from "@/components/store/FavoriteButton";
+import { LinkPending } from "@/components/store/LinkPending";
 
 export function ProductCard({ p, className = "", priority = false }: { p: CardProduct; className?: string; priority?: boolean }) {
   const img = p.images[0]?.url;
@@ -17,8 +18,9 @@ export function ProductCard({ p, className = "", priority = false }: { p: CardPr
         <div className="relative aspect-[3/4] overflow-hidden bg-steel">
           {img ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={img} alt={p.images[0]?.alt || p.name} loading={priority ? "eager" : "lazy"} decoding="async" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            <img src={img} alt={p.images[0]?.alt || p.name} width={900} height={1200} loading={priority ? "eager" : "lazy"} decoding="async" {...(priority ? { fetchPriority: "high" as const } : {})} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
           ) : (<div className="grid h-full place-items-center text-sm text-mute">Sem imagem</div>)}
+          <LinkPending />
           <div className="absolute left-2 top-2 flex flex-wrap gap-1">
             {pct > 0 && <span className="badge badge-accent">-{pct}%</span>}
             {p.isNew && <span className="badge">Novo</span>}

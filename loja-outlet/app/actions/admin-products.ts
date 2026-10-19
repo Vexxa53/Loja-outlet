@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { bustStore } from "@/lib/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
@@ -89,7 +90,7 @@ export async function saveProductAction(fd: FormData): Promise<SaveState> {
         ...(priceChanged ? { price: [before.priceCents, data.priceCents], promo: [before.promoPriceCents, data.promoPriceCents], cost: [before.costCents, data.costCents] } : {}),
         ...(before.status !== data.status ? { status: [before.status, data.status] } : {}),
       });
-      revalidatePath("/", "layout");
+      bustStore();
       return { ok: true, id, created: false };
     }
     const created = await db.$transaction(async (tx) => {
@@ -102,7 +103,7 @@ export async function saveProductAction(fd: FormData): Promise<SaveState> {
       return p;
     });
     await audit(admin.id, "product.create", "Product", created.id, { sku: created.sku, variants: variants.length });
-    revalidatePath("/", "layout");
+    bustStore();
     return { ok: true, id: created.id, created: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
@@ -136,14 +137,14 @@ export async function deleteProduct(fd: FormData) {
   if (sold > 0) {
     await db.product.update({ where: { id }, data: { status: "ARCHIVED" } });
     await audit(admin.id, "product.archive(instead-of-delete)", "Product", id);
-    revalidatePath("/", "layout");
+    bustStore();
     go("/admin/produtos", "Este produto já foi vendido, então foi arquivado (some da loja) para preservar o histórico dos pedidos.");
   }
   const imgs = await db.productImage.findMany({ where: { productId: id } });
   await db.product.delete({ where: { id } });
   await Promise.all(imgs.map((i) => deleteImage(i.path)));
   await audit(admin.id, "product.delete", "Product", id);
-  revalidatePath("/", "layout");
+  bustStore();
   go("/admin/produtos", "Produto excluído.");
 }
 
@@ -165,7 +166,7 @@ export async function addVariant(fd: FormData) {
       await audit(admin.id, "variant.create", "Variant", created.id, { sku: created.sku, stock });
     });
   } catch { go(`/admin/produtos/${pid}`, "Variação duplicada (tamanho/cor ou SKU já existe).", true); }
-  revalidatePath("/", "layout");
+  bustStore();
   go(`/admin/produtos/${pid}`, "Variação adicionada.");
 }
 
@@ -174,7 +175,7 @@ export async function updateVariant(fd: FormData) {
   const id = String(fd.get("id")); const pid = String(fd.get("productId"));
   await db.variant.update({ where: { id }, data: { minStock: Math.max(0, Number(fd.get("minStock")) || 0), active: fd.get("active") === "on" } });
   await audit(admin.id, "variant.update", "Variant", id);
-  revalidatePath("/", "layout");
+  bustStore();
   go(`/admin/produtos/${pid}`, "Variação atualizada.");
 }
 
@@ -183,7 +184,7 @@ export async function deleteVariant(fd: FormData) {
   const id = String(fd.get("id")); const pid = String(fd.get("productId"));
   await db.variant.delete({ where: { id } });
   await audit(admin.id, "variant.delete", "Variant", id);
-  revalidatePath("/", "layout");
+  bustStore();
   go(`/admin/produtos/${pid}`, "Variação removida (pedidos antigos preservam o histórico).");
 }
 
@@ -197,7 +198,7 @@ export async function moveImage(fd: FormData) {
   if (j < 0 || j >= all.length) return go(`/admin/produtos/${img.productId}`);
   [all[i], all[j]] = [all[j], all[i]];
   await db.$transaction(all.map((x, k) => db.productImage.update({ where: { id: x.id }, data: { position: k } })));
-  revalidatePath("/", "layout");
+  bustStore();
   go(`/admin/produtos/${img.productId}`, "Ordem das imagens atualizada.");
 }
 
@@ -208,6 +209,6 @@ export async function removeImage(fd: FormData) {
   await db.productImage.delete({ where: { id: img.id } });
   await deleteImage(img.path);
   await audit(admin.id, "product.image.delete", "Product", img.productId);
-  revalidatePath("/", "layout");
+  bustStore();
   go(`/admin/produtos/${img.productId}`, "Imagem removida.");
 }
