@@ -127,3 +127,6 @@ Delegados ao provedor do banco: confirme no plano contratado (Supabase Free **n√
 
 
 Outlet 3k
+
+
+Outlet 3K
