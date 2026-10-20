@@ -102,7 +102,7 @@ export default async function Catalog({ searchParams }: { searchParams: Promise<
   return (
     <div className="container-x py-6 md:py-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <nav aria-label="Você está em" className="mb-3 text-xs text-mute"><Link className="hover:text-accent" href="/">Início</Link> <span aria-hidden>›</span> <Link className="hover:text-accent" href="/produtos">Produtos</Link>{cat && <> <span aria-hidden>›</span> <span className="text-white">{cat.name}</span></>}</nav>
+      <nav aria-label="Você está em" className="mb-3 text-xs text-mute"><Link className="inline-flex min-h-11 items-center hover:text-accent" href="/">Início</Link> <span aria-hidden>›</span> <Link className="inline-flex min-h-11 items-center hover:text-accent" href="/produtos">Produtos</Link>{cat && <> <span aria-hidden>›</span> <span className="text-white">{cat.name}</span></>}</nav>
       <h1 className="h-display text-3xl md:text-4xl">{title}</h1>
       {cat && CATEGORY_INTRO[cat.slug] && <p className="mt-2 max-w-3xl text-sm text-zinc-300">{CATEGORY_INTRO[cat.slug]}</p>}
 

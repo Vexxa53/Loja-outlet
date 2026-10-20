@@ -48,7 +48,8 @@ test("menu mobile: sobrepõe a página, bloqueia cliques atrás e devolve a inte
   await page.setViewportSize({ width: 390, height: 780 });
   await page.goto("/produtos?categoria=camisas");
   const before = page.url();
-  const firstCardLink = page.locator('a[href^="/produto/"]').first();
+  const firstCardLink = page.locator('a[href^="/produto/"]:visible').first();
+  await firstCardLink.waitFor();
   const pt = (await firstCardLink.boundingBox())!;
   const x = Math.min(380, pt.x + pt.width / 2), y = Math.min(770, pt.y + 40);
   await openBtn(page).click();

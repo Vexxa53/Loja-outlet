@@ -88,6 +88,12 @@ Toda a estrutura já existe; **nenhum recebedor, chave PIX ou credencial está c
 - **Ligar o recebimento real:** escolha o gateway, informe as credenciais, cadastre o webhook (`/api/webhooks/mercadopago` ou `/api/webhooks/payments/<gateway>`) e mude o modo para *Recebimento real*. Hoje só o adaptador do Mercado Pago está instalado; outros gateways entram como novos adaptadores sem mexer em checkout, banco ou pedidos.
 - **Importante:** deixe o modo *Teste* desligado na loja aberta ao público.
 
+## Cadastro de produtos: tamanhos, cores e estoque por variação
+- Formulário em 8 seções (informações, imagens, categoria, descrição, preços, tamanhos e cores, variações e estoque, revisão/publicação). Botões de tamanho e cor, tamanhos/cores personalizados e uma matriz tamanho × cor com SKU, estoque e situação por linha.
+- **Calçados exigem numeração** (ex.: 38 ou 37.5) em toda gravação — validado no navegador e no servidor (`lib/product-save.ts`). Quais categorias são "calçado" vem da categoria real (por nome/slug) e pode ser ajustado em **Configurações → Grades de tamanho**, onde também se ampliam as grades sugeridas. Configuração central: `lib/size-grids.ts`.
+- Estoque é o `Variant.stock` de sempre (sem estoque paralelo). Alterar quantidade registra um ajuste no histórico, confere concorrência (se alguém vendeu enquanto você editava, o salvamento é recusado) e exige a permissão `stock.write`; criar produto com estoque inicial continua liberado para `products.write`.
+- Variações já cadastradas nunca são apagadas pelo formulário: ao desmarcar, ficam inativas e mantêm estoque e histórico. Tamanho/cor de variação existente não muda. Salvar é tudo-ou-nada (transação). Não houve mudança de banco de dados.
+
 ## Desempenho
 - Configurações da loja e menu de categorias ficam em cache curto (5 min / 1 min) e são limpos na hora quando o painel salva algo (`lib/cache.ts`, `bustStore`).
 - O cabeçalho consulta tudo em paralelo e lê o login só do cookie assinado; a página do produto faz 1 consulta (join) e carrega "relacionados" depois (Suspense). Fontes são hospedadas pelo próprio site.

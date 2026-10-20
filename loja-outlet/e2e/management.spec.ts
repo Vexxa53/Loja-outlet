@@ -1,4 +1,5 @@
 import { clearLimits } from "./limits";
+import { pickColor, pickSize, setStock } from "./variants";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { makePng, makeJpeg, makeWebp } from "./images";
 
@@ -42,9 +43,7 @@ test("produto: cadastro com upload, edição, troca de imagem, status e exclusã
   await page.getByLabel("Descrição completa").fill("Descrição completa do produto de teste.");
   await page.locator('input[aria-label="Escolher fotos do produto"]').setInputFiles(png([200, 30, 30]));
   await expect(page.getByAltText("Prévia")).toBeVisible(); // pré-visualização antes de salvar
-  await page.getByLabel("Tamanho").first().fill("M");
-  await page.getByLabel("Cor").first().fill("Vermelho");
-  await page.getByLabel("Estoque").first().fill("5");
+  await pickSize(page, "M"); await pickColor(page, "Vermelho"); await setStock(page, "M", "Vermelho", "5");
   await page.getByRole("button", { name: "Cadastrar produto" }).click();
   await expect(page.getByText("Produto cadastrado com sucesso!")).toBeVisible();
   await expect(page).toHaveURL(/\/admin\/produtos\/[a-z0-9]+\?ok=/);
@@ -163,12 +162,12 @@ test("upload: formatos e tamanhos inválidos mostram mensagens claras", async ({
   await page.getByLabel("Preço de venda (R$)").fill("10,00");
   await page.getByLabel("Situação na loja").selectOption("PUBLISHED");
   await page.getByRole("button", { name: "Cadastrar produto" }).click();
-  await expect(page.getByText(/informe ao menos uma variação/)).toBeVisible();
+  await expect(page.getByText(/ative ao menos uma variação/).first()).toBeVisible();
   // preço promocional maior que o preço é barrado
   await page.getByLabel("Situação na loja").selectOption("DRAFT");
   await page.getByLabel(/Preço promocional/).fill("20,00");
   await page.getByRole("button", { name: "Cadastrar produto" }).click();
-  await expect(page.getByText(/preço promocional precisa ser menor/)).toBeVisible();
+  await expect(page.getByText(/preço promocional precisa ser menor/).first()).toBeVisible();
 });
 
 test("banners: cadastro, edição, ordem, dispositivo, ativar/desativar, exclusão", async ({ page, browser }) => {

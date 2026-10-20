@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { Flash } from "@/components/Flash";
@@ -18,5 +19,5 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ o
       {c && <button formAction={deleteCategory} className="btn btn-danger" formNoValidate>Excluir ({c._count.products})</button>}
     </form>
   );
-  return (<div className="space-y-4"><h1 className="h-display text-2xl">Categorias</h1><Flash ok={sp.ok} erro={sp.erro} />{row()}{cats.map((c) => row(c))}</div>);
+  return (<div className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-2"><h1 className="h-display text-2xl">Categorias</h1><Link href="/admin/config/grades" className="btn btn-ghost">Grades de tamanho →</Link></div><Flash ok={sp.ok} erro={sp.erro} />{row()}{cats.map((c) => row(c))}</div>);
 }
