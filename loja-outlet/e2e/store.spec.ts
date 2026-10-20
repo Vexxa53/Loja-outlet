@@ -1,4 +1,5 @@
 import { clearLimits, ensureTestData } from "./limits";
+import { pickColor, pickSize, setStock } from "./variants";
 import { expect, test } from "@playwright/test";
 
 const stamp = Date.now();
@@ -132,9 +133,7 @@ test("admin: proteção de rotas, login, CRUD e permissões", async ({ page, req
   await page.getByLabel("Preço de venda (R$)").fill("100,00");
   await page.getByLabel(/Preço promocional/).fill("80,00");
   await page.getByLabel("Situação na loja").selectOption("PUBLISHED");
-  await page.getByLabel("Tamanho").first().fill("G");
-  await page.getByLabel("Cor").first().fill("Azul");
-  await page.getByLabel("Estoque").first().fill("4");
+  await pickSize(page, "G"); await pickColor(page, "Azul"); await setStock(page, "G", "Azul", "4");
   await page.getByRole("button", { name: "Cadastrar produto" }).click();
   await expect(page.getByText("Produto cadastrado com sucesso!")).toBeVisible();
 

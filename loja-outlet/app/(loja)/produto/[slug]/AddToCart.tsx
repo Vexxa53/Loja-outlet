@@ -45,7 +45,7 @@ export function AddToCart({ variants }: { variants: V[] }) {
   const chip = "inline-flex min-h-11 min-w-11 items-center justify-center border px-3 text-sm font-semibold";
   return (
     <div className="space-y-4">
-      {colors.length > 1 || colors[0] ? (
+      {colors.length > 1 || (colors[0] && colors[0] !== "Único") ? (
         <div>
           <p className="label">Cor: <span className="normal-case text-white">{color || "selecione"}</span></p>
           <div className="flex flex-wrap gap-2">

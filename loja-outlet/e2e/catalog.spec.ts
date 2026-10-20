@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { clearLimits, ensureTestData, resetStarterCatalog } from "./limits";
 import { makePng } from "./images";
+import { pickColor, pickSize, saveAndWait, setStock } from "./variants";
 
 test.beforeEach(clearLimits);
 test.beforeAll(ensureTestData);
@@ -87,6 +88,7 @@ test("catálogo inicial: instalação pelo painel, vitrine, edição e persistê
   // 6) página de produto com variações e estoque
   await store.goto("/produtos?q=Puffer");
   await store.getByText("Jaqueta Puffer Preta").first().click();
+  await expect(store).toHaveURL(/\/produto\//);
   await expect(store.getByRole("heading", { name: "Jaqueta Puffer Preta" })).toBeVisible();
   await expect(store.getByText("R$ 399,90").first()).toBeVisible();
   await expect(store.getByRole("button", { name: "GG", exact: true })).toBeEnabled();
@@ -99,27 +101,26 @@ test("catálogo inicial: instalação pelo painel, vitrine, edição e persistê
   await page.getByLabel("Preço de venda (R$)").fill("450,00");
   await page.getByLabel(/Preço promocional/).fill("399,00");
   await page.getByLabel("Destaque na página inicial").uncheck();
-  await page.getByRole("button", { name: "Salvar alterações" }).click();
+  await saveAndWait(page);
   await expect(page.getByText(/Alterações salvas/)).toBeVisible();
   await store.goto(puffer);
   await expect(store.getByRole("heading", { name: "Jaqueta Puffer Preta Editada" })).toBeVisible();
   await expect(store.getByText("R$ 399,00").first()).toBeVisible();
   await expect(store.getByText("-11%")).toBeVisible();
   // categoria e tamanhos/estoque editáveis
-  await page.getByLabel("Categoria").selectOption({ label: "Tênis" });
+  // calçado exige numeração: mudar a categoria para Tênis com tamanhos de roupa é barrado e nada muda
+  await page.getByLabel("Categoria", { exact: true }).selectOption({ label: "Tênis" });
   await page.getByRole("button", { name: "Salvar alterações" }).click();
-  await expect(page.getByText(/Alterações salvas/)).toBeVisible();
+  await expect(page.getByText("Selecione pelo menos um tamanho para este calçado.").first()).toBeVisible();
   await store.goto("/produtos?categoria=tenis");
-  await expect(store.getByText("9 produto(s) encontrado(s)")).toBeVisible();
-  await page.getByLabel("Categoria").selectOption({ label: "Blusas e jaquetas" });
-  await page.getByRole("button", { name: "Salvar alterações" }).click();
+  await expect(store.getByText("8 produto(s) encontrado(s)")).toBeVisible();
+  await page.getByLabel("Categoria", { exact: true }).selectOption({ label: "Blusas e jaquetas" });
+  await pickSize(page, "XG"); await pickColor(page, "Verde");
+  await page.getByLabel("Estoque das linhas novas ainda vazias:").fill("0");
+  await page.getByRole("button", { name: "Aplicar" }).click();
+  await setStock(page, "XG", "Verde", "3");
+  await saveAndWait(page);
   await expect(page.getByText(/Alterações salvas/)).toBeVisible();
-  await page.getByPlaceholder("Cor").or(page.getByLabel("Cor").last()).fill("Verde");
-  await page.getByLabel("Tamanho").last().fill("XG");
-  await page.getByLabel("SKU da variação").fill("OUT3K-JAQ-007-XG");
-  await page.getByLabel("Estoque inicial").fill("3");
-  await page.getByRole("button", { name: "Adicionar" }).click();
-  await expect(page.getByText("Variação adicionada.")).toBeVisible();
   await store.goto(puffer);
   await store.getByRole("button", { name: "Verde", exact: true }).click();
   await expect(store.getByRole("button", { name: "XG", exact: true })).toBeVisible();
@@ -138,7 +139,7 @@ test("catálogo inicial: instalação pelo painel, vitrine, edição e persistê
 
   // 9) desativar → some da loja; excluir → some do painel
   await page.getByLabel("Situação na loja").selectOption("DRAFT");
-  await page.getByRole("button", { name: "Salvar alterações" }).click();
+  await saveAndWait(page);
   await expect(page.getByText(/Alterações salvas/)).toBeVisible();
   expect((await store.goto(puffer))?.status()).toBe(404);
   page.once("dialog", (d) => d.accept());

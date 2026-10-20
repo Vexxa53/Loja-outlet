@@ -22,5 +22,5 @@ export const TAG_CATALOG = "catalog";
 /** Chamar depois de qualquer alteração feita no painel que apareça na vitrine. */
 export function bustStore() {
   try { revalidateTag(TAG_SETTINGS, { expire: 0 }); revalidateTag(TAG_CATALOG, { expire: 0 }); } catch { /* fora do Next */ }
-  revalidatePath("/", "layout");
+  try { revalidatePath("/", "layout"); } catch { /* fora do Next */ }
 }

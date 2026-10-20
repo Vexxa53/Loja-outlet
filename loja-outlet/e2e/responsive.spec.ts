@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 const WIDTHS = [320, 360, 375, 390, 430, 768, 1024, 1440];
 const STORE = ["/", "/produtos", "/produtos?q=moletom", "/produto/moletom-basico-com-capuz-taupe", "/carrinho", "/conta/entrar", "/conta/cadastrar", "/politicas/privacidade"];
-const ADMIN = ["/admin", "/admin/produtos", "/admin/produtos/novo", "/admin/banners", "/admin/categorias", "/admin/estoque", "/admin/pedidos", "/admin/clientes", "/admin/cupons", "/admin/config", "/admin/config/pagamentos", "/admin/usuarios", "/admin/auditoria"];
+const ADMIN = ["/admin", "/admin/produtos", "/admin/produtos/novo", "/admin/banners", "/admin/categorias", "/admin/estoque", "/admin/pedidos", "/admin/clientes", "/admin/cupons", "/admin/config", "/admin/config/pagamentos", "/admin/config/grades", "/admin/usuarios", "/admin/auditoria"];
 
 const overflow = (p: Page) => p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
